@@ -1,9 +1,16 @@
-import { Update, Start, Help, On, Hears, Ctx, Command } from 'nestjs-telegraf';
+import { Update, Start, Help, Hears, Ctx, Command } from 'nestjs-telegraf';
+import { GroupService } from 'src/group/group.service';
 import { Context, Scenes } from 'telegraf';
 
 
 @Update()
 export class BotUpdate {
+
+  constructor(
+    private groupService: GroupService,
+  ){
+  }
+
 
   @Start()
   async start(@Ctx() ctx: Context) {
@@ -17,27 +24,83 @@ export class BotUpdate {
 
   @Hears('Hola')
   async hearsHola(@Ctx() ctx: Context) {
-    await ctx.reply('¡Hola humano! 😄');
+    if(ctx.message){
+      await ctx.reply(`¡Hola ${ctx.message.from.first_name ?? ''}! 😄`);
+      await ctx.reply(`Selecciona un comando para iniciar, o /config si no tienes grupo asignado`);
+    }
+  }
+
+  @Command('config')
+  async startConfig(@Ctx() ctx: Scenes.SceneContext){
+    if(ctx.message?.from.id){
+      const group = await this.groupService.hasAssignedGroup(`${ctx.message?.from.id}`)
+      if(group){ 
+        await ctx.scene.enter('config', {group: group})
+      } else {
+        await ctx.scene.enter('new-group')
+      }
+    }
   }
 
   @Command('gasto')
   async startBill(@Ctx() ctx: Scenes.SceneContext) {
-    await ctx.scene.enter('new-bill')
+    if(ctx.message?.from.id){
+      const group = await this.groupService.hasAssignedGroup(`${ctx.message?.from.id}`)
+      if(group){ 
+        await ctx.scene.enter('bill', {group: group})
+      } else {
+        await ctx.scene.enter('new-group')
+      }
+    }
   }
 
   @Command('cuotas')
   async startInstalment(@Ctx() ctx: Scenes.SceneContext) {
-    await ctx.scene.enter('new-instalment')
+    if(ctx.message?.from.id){
+      const group = await this.groupService.hasAssignedGroup(`${ctx.message?.from.id}`)
+      if(group){ 
+        await ctx.scene.enter('instalment', {group: group})
+      } else {
+        await ctx.scene.enter('new-group')
+      }
+    }
   }
 
   @Command('fijo')
-  async ficexCost(@Ctx() ctx: Scenes.SceneContext) {
-    // await ctx.scene.enter('new-instalment')
+  async fixedCost(@Ctx() ctx: Scenes.SceneContext) {
+    if(ctx.message?.from.id){
+      const group = await this.groupService.hasAssignedGroup(`${ctx.message?.from.id}`)
+      if(group){ 
+        await ctx.scene.enter('fixed-cost', {group: group})
+      } else {
+        await ctx.scene.enter('new-group')
+      }
+    }
   }
 
-  @On('text')
-  async onText(@Ctx() ctx: Context) {
-        await ctx.reply('Utiliza un comando del menu para comenzar.');
+  @Command('transferencia')
+  async transfer(@Ctx() ctx: Scenes.SceneContext) {
+    if(ctx.message?.from.id){
+      const group = await this.groupService.hasAssignedGroup(`${ctx.message?.from.id}`)
+      if(group){ 
+        await ctx.scene.enter('tranfer', {group: group})
+      } else {
+        await ctx.scene.enter('new-group')
+      }
+    }
+  }
+
+  @Command('saldos')
+  @Command('balance')
+  async balance(@Ctx() ctx: Scenes.SceneContext) {
+    if(ctx.message?.from.id){
+      const group = await this.groupService.hasAssignedGroup(`${ctx.message?.from.id}`)
+      if(group){ 
+        await ctx.scene.enter('balance', {group: group})
+      } else {
+        await ctx.scene.enter('new-group')
+      }
+    }
   }
 
 }

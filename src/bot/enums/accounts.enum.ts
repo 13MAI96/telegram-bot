@@ -1,5 +1,0 @@
-export const ACCOUNTS = [
-    'PREX', 'ASTROPAY', 'NARANJA', 'PERSONAL PAY', 'BRUBANK',
-    'MERCADO PAGO', 'UALA', 'CLARO PAY', 'LEMON', 'SANTANDER',
-    'GALICIA', 'CASH'
-]
