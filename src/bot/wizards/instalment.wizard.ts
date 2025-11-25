@@ -101,7 +101,7 @@ export class InstallmentWizard {
   @WizardStep(7)
   async step7(@Ctx() ctx: Scenes.WizardContext) {
     if(ctx.message){
-        const debit = parseInt(ctx.message['text']);
+        const debit = parseFloat(ctx.message['text']);
         const instalments = ctx.wizard.state['instalments']
         if (isNaN(debit) || debit < 0) {
           await ctx.reply('🚫 Monto invalido. Ingresá un número válido.');

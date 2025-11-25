@@ -4,8 +4,8 @@ import { SheetsService } from 'src/sheets/sheets.service';
 import { Group } from 'src/schemas/group.schema';
 import { DateService } from 'src/shared/services/date.service';
 
-@Wizard('bill')
-export class BillWizard {
+@Wizard('transfer')
+export class TransferWizard {
   constructor(
     private sheetsService: SheetsService,
     private dateService: DateService
@@ -14,20 +14,13 @@ export class BillWizard {
 
   @WizardStep(1)
   async step1(@Ctx() ctx: Scenes.WizardContext) {
-    this.sheetsService.getObservableData(ctx.wizard.state['group'])
-    await ctx.reply('🗓 ¿Cuál es la fecha del gasto? (dd/mm/yyyy)');
-    ctx.wizard.next();
-  }
-
-  @WizardStep(2)
-  @Hears(/hoy/i)
-  async today(@Ctx() ctx: Scenes.WizardContext) {
     const group: Group = ctx.wizard.state['group']
-    const date = new Date()
-    ctx.wizard.state['date'] = this.dateService.formatDateToDDMMYYYY(date);
-    await ctx.reply(`Fecha: ${ctx.wizard.state['date']} \n¿A cual de estas categoria corresponde? (Mandame solo el numero.)
-  ${group.categories.map((x, index) => {return `${index}. ${x}`}).join(`\n\t`)}`
-        );
+    if(!group.self_transfer_category){
+        await ctx.reply('Primero deber configurar categoria para transferencias entre cuentas propias.')
+        return ctx.scene.leave()
+    }
+    this.sheetsService.getObservableData(ctx.wizard.state['group'])
+    await ctx.reply('🗓 ¿Cuál es la fecha de la transferencia? (dd/mm/yyyy)');
     ctx.wizard.next();
   }
 
@@ -36,8 +29,8 @@ export class BillWizard {
     const group: Group = ctx.wizard.state['group']
     if(ctx.message && this.dateService.isValidDate(ctx.message['text'])){
         ctx.wizard.state['date'] = ctx.message['text'];
-        await ctx.reply(`Fecha: ${ctx.wizard.state['date']} \n¿A cual de estas categoria corresponde? (Mandame solo el numero.)
-  ${group.categories.map((x, index) => {return `${index}. ${x}`}).join(`\n\t`)}`
+        await ctx.reply(`Fecha: ${ctx.wizard.state['date']} \n¿Desde que cuenta moviste el dinero?
+            `
         );
         ctx.wizard.next();
     } else {
@@ -50,14 +43,13 @@ export class BillWizard {
   async step3(@Ctx() ctx: Scenes.WizardContext) {
       if(ctx.message){
         const group: Group = ctx.wizard.state['group']
-        const message = ctx.message['text']
-        const selected = parseInt(message)
-        if(selected && selected > -1 && selected < group.categories.length){
-          ctx.wizard.state['category'] = group.categories[message];
-            await ctx.reply(`Categoria ${ctx.wizard.state['category']} \n¿Me describis de que es este gasto?`);
+        const message = ctx.message['text'].toUpperCase()
+        if(group.accounts.find((x) => x == message)){
+            ctx.wizard.state['origin_account'] = message;
+            await ctx.reply(`Cuenta ${ctx.wizard.state['origin_account']} \n¿Quien es el titular de esa cuenta?`);
             ctx.wizard.next();
         } else {
-            await ctx.reply(`Lo siento la categoria ingresada no es valida. \nIngresala nuevamente:`);
+            await ctx.reply(`Lo siento la cuenta ingresada no es valida. \Selecciona una de la lista: ${group.accounts.map((x) => {return `\n\t${x}`}).toLocaleString()}`);
             return
         }
     }
@@ -66,10 +58,17 @@ export class BillWizard {
   @WizardStep(4)
   async step4(@Ctx() ctx: Scenes.WizardContext) {
       if(ctx.message){
-        ctx.wizard.state['description'] = ctx.message['text'];
-            await ctx.reply(`Descripcion ${ctx.wizard.state['description']} \n¿Desde que cuenta realizaste la transaccion?`);
+        const group: Group = ctx.wizard.state['group']
+        const message = ctx.message
+        if(group.holders.find((x) => x == message['text'])){
+            ctx.wizard.state['origin_owner'] = message['text'];
+            await ctx.reply(`Titular: ${ctx.wizard.state['origin_owner']} \n¿A que cuenta moviste la plata?`);
             ctx.wizard.next();
-      }
+        } else {
+            await ctx.reply(`Lo siento la el titular no es valido.`);
+            return
+        }
+    }
   }
 
   @WizardStep(5)
@@ -78,8 +77,8 @@ export class BillWizard {
         const group: Group = ctx.wizard.state['group']
         const message = ctx.message['text'].toUpperCase()
         if(group.accounts.find((x) => x == message)){
-            ctx.wizard.state['account'] = message;
-            await ctx.reply(`Cuenta ${ctx.wizard.state['account']} \n¿Quien es el titular de esa cuenta?`);
+            ctx.wizard.state['final_account'] = message;
+            await ctx.reply(`Cuenta ${ctx.wizard.state['final_account']} \n¿Quien es el titular de esa cuenta?`);
             ctx.wizard.next();
         } else {
             await ctx.reply(`Lo siento la cuenta ingresada no es valida. \Selecciona una de la lista: ${group.accounts.map((x) => {return `\n\t${x}`}).toLocaleString()}`);
@@ -94,8 +93,8 @@ export class BillWizard {
         const group: Group = ctx.wizard.state['group']
         const message = ctx.message
         if(group.holders.find((x) => x == message['text'])){
-            ctx.wizard.state['owner'] = message['text'];
-            await ctx.reply(`Titular: ${ctx.wizard.state['owner']} \n¿Cuanto deberia debitar de la cuenta?`);
+            ctx.wizard.state['final_owner'] = message['text'];
+            await ctx.reply(`Titular: ${ctx.wizard.state['final_owner']} \n¿De cuanto fue la transferencia?`);
             ctx.wizard.next();
         } else {
             await ctx.reply(`Lo siento la el titular no es valido.`);
@@ -112,37 +111,33 @@ export class BillWizard {
           await ctx.reply('🚫 Monto invalido. Ingresá un número válido.');
           return;
         }
+        const group: Group = ctx.wizard.state['group']
         ctx.wizard.state['debit'] = debit;
-        await ctx.reply(`Cuanto deberia acreditar en la cuenta?`);
-        ctx.wizard.next();
-    }
-  }
-
-  @WizardStep(8)
-  async step8(@Ctx() ctx: Scenes.WizardContext) {
-    if(ctx.message){
-        const credit = parseFloat(ctx.message['text']);
-        if (isNaN(credit) || credit < 0) {
-          await ctx.reply('🚫 Monto invalido. Ingresá un número válido.');
-          return;
-        }
-        ctx.wizard.state['credit'] = credit;
         ctx.wizard.state['created_by'] = ctx.message.from.first_name
         await ctx.reply(
           `✅ Confirmo tus datos:
                 Fecha: ${ctx.wizard.state['date']}
-                Categoria: ${ctx.wizard.state['category']}
-                Descripcion: ${ctx.wizard.state['description']}
-                Cuenta: ${ctx.wizard.state['account']}
-                Titular: ${ctx.wizard.state['owner']}
+                Categoria: ${group.self_transfer_category}
+                Descripcion: ${ctx.wizard.state['origin_account']} to ${ctx.wizard.state['final_account']}
+                Cuenta: ${ctx.wizard.state['origin_account']}
+                Titular: ${ctx.wizard.state['origin_owner']}
                 Debito: ${ctx.wizard.state['debit']}
-                Credito: ${ctx.wizard.state['credit']}
+                Credito: 0
+                Creado por: ${ctx.wizard.state['created_by']}
+
+            Destino:
+                Fecha: ${ctx.wizard.state['date']}
+                Categoria: ${group.self_transfer_category}
+                Descripcion: ${ctx.wizard.state['origin_account']} to ${ctx.wizard.state['final_account']}
+                Cuenta: ${ctx.wizard.state['final_account']}
+                Titular: ${ctx.wizard.state['final_owner']}
+                Debito: 0
+                Credito: ${ctx.wizard.state['debit']}
                 Creado por: ${ctx.wizard.state['created_by']}
                 
             ¿Deseás confirmar? (sí/no)`
         );
         ctx.wizard.next();
-
     }
   }
 
@@ -150,17 +145,28 @@ export class BillWizard {
   @Hears(/sí|si|Si/i)
   async confirm(@Ctx() ctx: Scenes.WizardContext) {
     const group = ctx.wizard.state['group']
-    const sheetArray = [
+    const debitArray = [
         ctx.wizard.state['date'],
-        ctx.wizard.state['category'],
-        ctx.wizard.state['description'],
-        ctx.wizard.state['account'],
-        ctx.wizard.state['owner'],
+        group.self_transfer_category,
+        `${ctx.wizard.state['origin_account']} to ${ctx.wizard.state['final_account']}`,
+        ctx.wizard.state['origin_account'],
+        ctx.wizard.state['origin_owner'],
         ctx.wizard.state['debit'],
-        ctx.wizard.state['credit'],
+        0,
         ctx.wizard.state['created_by']
     ]
-    this.sheetsService.addRow(group).finally(() => this.sheetsService.pushData(sheetArray, group))
+    await this.sheetsService.addRow(group).finally(() => this.sheetsService.pushData(debitArray, group))
+    const creditArray = [
+        ctx.wizard.state['date'],
+        group.self_transfer_category,
+        `${ctx.wizard.state['origin_account']} to ${ctx.wizard.state['final_account']}`,
+        ctx.wizard.state['final_account'],
+        ctx.wizard.state['final_owner'],
+        0,
+        ctx.wizard.state['debit'],
+        ctx.wizard.state['created_by']
+    ]
+    this.sheetsService.addRow(group).finally(() => this.sheetsService.pushData(creditArray, group))
     await ctx.reply('🎉 ¡Registro completado!');
     return ctx.scene.leave(); 
   }

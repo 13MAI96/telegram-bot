@@ -83,7 +83,7 @@ export class BotUpdate {
     if(ctx.message?.from.id){
       const group = await this.groupService.hasAssignedGroup(`${ctx.message?.from.id}`)
       if(group){ 
-        await ctx.scene.enter('tranfer', {group: group})
+        await ctx.scene.enter('transfer', {group: group})
       } else {
         await ctx.scene.enter('new-group')
       }
