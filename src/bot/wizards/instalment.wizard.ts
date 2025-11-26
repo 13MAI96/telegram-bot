@@ -26,6 +26,20 @@ export class InstallmentWizard {
   }
 
   @WizardStep(2)
+  @Hears(/hoy/i)
+  async today(@Ctx() ctx: Scenes.WizardContext) {
+    const group: Group = ctx.wizard.state['group']
+    const date = new Date()
+    ctx.wizard.state['date'] = this.dateService.formatDateToDDMMYYYY(date);
+    await ctx.reply(`Fecha: ${ctx.wizard.state['date']} 
+            \nPara este tipo de transaccion la categoria esta definida por defecto.
+            \nCategoria: ${group.instalment_category} 
+            \n¿Me contas de que es el gasto?`
+        );
+    ctx.wizard.next();
+  }
+
+  @WizardStep(2)
   async step2(@Ctx() ctx: Scenes.WizardContext) {
     if(ctx.message && this.dateService.isValidDate(ctx.message['text'])){
         ctx.wizard.state['date'] = ctx.message['text'];

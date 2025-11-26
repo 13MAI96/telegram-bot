@@ -25,6 +25,18 @@ export class TransferWizard {
   }
 
   @WizardStep(2)
+  @Hears(/hoy/i)
+  async today(@Ctx() ctx: Scenes.WizardContext) {
+    const group: Group = ctx.wizard.state['group']
+    const date = new Date()
+    ctx.wizard.state['date'] = this.dateService.formatDateToDDMMYYYY(date);
+    await ctx.reply(`Fecha: ${ctx.wizard.state['date']} \n¿Desde que cuenta moviste el dinero?
+            `
+        );
+    ctx.wizard.next();
+  }
+
+  @WizardStep(2)
   async step2(@Ctx() ctx: Scenes.WizardContext) {
     const group: Group = ctx.wizard.state['group']
     if(ctx.message && this.dateService.isValidDate(ctx.message['text'])){

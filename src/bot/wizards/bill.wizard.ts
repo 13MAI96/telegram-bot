@@ -52,7 +52,7 @@ export class BillWizard {
         const group: Group = ctx.wizard.state['group']
         const message = ctx.message['text']
         const selected = parseInt(message)
-        if(selected && selected > -1 && selected < group.categories.length){
+        if( isNaN(selected) && selected > -1 && selected < group.categories.length){
           ctx.wizard.state['category'] = group.categories[message];
             await ctx.reply(`Categoria ${ctx.wizard.state['category']} \n¿Me describis de que es este gasto?`);
             ctx.wizard.next();
