@@ -15,6 +15,8 @@ import { OneTimeToken, OneTimeTokenSchema } from 'src/schemas/token.schema';
 import Wizards from './wizards';
 import { SharedModule } from 'src/shared/shared.module';
 import { DateService } from 'src/shared/services/date.service';
+import { CsvService } from 'src/shared/services/csv.service';
+import { ExcelService } from 'src/shared/services/excel.service';
 
 
 @Module({
@@ -40,7 +42,9 @@ import { DateService } from 'src/shared/services/date.service';
     GroupService,
     SheetsService,
     TokenService,
-    DateService
+    DateService,
+    CsvService,
+    ExcelService
   ],
 })
 export class BotModule {}

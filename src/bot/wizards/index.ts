@@ -8,6 +8,7 @@ import { InstallmentWizard } from "./instalment.wizard"
 import { MemberWizard } from "./member.wizard"
 import { TransferWizard } from "./transfer.wizard"
 import { UsersWizard } from "./users.wizard"
+import { EspeWizard } from "./zespe.wizard"
 
 const Wizards = [
     AccountsWizard,
@@ -20,6 +21,7 @@ const Wizards = [
     MemberWizard,
     TransferWizard,
     UsersWizard,
+    EspeWizard
 ]
 
 export default Wizards;

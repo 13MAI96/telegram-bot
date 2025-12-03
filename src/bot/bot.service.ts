@@ -1,6 +1,8 @@
-import { Update, Start, Help, Hears, Ctx, Command } from 'nestjs-telegraf';
+import { Update, Start, Help, Hears, Ctx, Command, On } from 'nestjs-telegraf';
 import { GroupService } from 'src/group/group.service';
+import { CsvService } from 'src/shared/services/csv.service';
 import { Context, Scenes } from 'telegraf';
+import * as fs from 'fs'
 
 
 @Update()
@@ -8,6 +10,7 @@ export class BotUpdate {
 
   constructor(
     private groupService: GroupService,
+    private csvService: CsvService
   ){
   }
 
@@ -101,6 +104,11 @@ export class BotUpdate {
         await ctx.scene.enter('new-group')
       }
     }
+  }
+
+  @Hears(/mayores/i)
+  async maestros(@Ctx() ctx: Scenes.SceneContext){
+    await ctx.scene.enter('espe')
   }
 
 }
