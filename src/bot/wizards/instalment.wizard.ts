@@ -16,7 +16,7 @@ export class InstallmentWizard {
   @WizardStep(1)
   async step1(@Ctx() ctx: Scenes.WizardContext) {
     const group: Group = ctx.wizard.state['group']
-    if(group.instalment_category){
+    if(group.instalment_categories.length > 0){
       await ctx.reply('🗓 Asi que pasando a rojo eh \n¿Cuando se pagaria la primer cuota? (dd/mm/yyyy)');
       ctx.wizard.next();
     } else {
@@ -28,35 +28,49 @@ export class InstallmentWizard {
   @WizardStep(2)
   @Hears(/hoy/i)
   async today(@Ctx() ctx: Scenes.WizardContext) {
-    const group: Group = ctx.wizard.state['group']
     const date = new Date()
     ctx.wizard.state['date'] = this.dateService.formatDateToDDMMYYYY(date);
-    await ctx.reply(`Fecha: ${ctx.wizard.state['date']} 
-            \nPara este tipo de transaccion la categoria esta definida por defecto.
-            \nCategoria: ${group.instalment_category} 
-            \n¿Me contas de que es el gasto?`
-        );
-    ctx.wizard.next();
+    await this.step2Default(ctx)
   }
 
   @WizardStep(2)
   async step2(@Ctx() ctx: Scenes.WizardContext) {
     if(ctx.message && this.dateService.isValidDate(ctx.message['text'])){
         ctx.wizard.state['date'] = ctx.message['text'];
-        const group: Group = ctx.wizard.state['group']
-        await ctx.reply(`Fecha: ${ctx.wizard.state['date']} 
-            \nPara este tipo de transaccion la categoria esta definida por defecto.
-            \nCategoria: ${group.instalment_category} 
-            \n¿Me contas de que es el gasto?`
-        );
-        ctx.wizard.next();
+        await this.step2Default(ctx)
     } else {
         await ctx.reply(`Fecha o formato invalidos. \nIngresala nuevamente:`);
         return
     }
   }
 
+  async step2Default(@Ctx() ctx: Scenes.WizardContext){
+    const group = ctx.wizard.state['group']
+    await ctx.reply(`Fecha: ${ctx.wizard.state['date']} \n¿A cual de estas categoria corresponde? (Mandame solo el numero.)
+${group.instalment_categories.map((x, index) => {return `${index}. ${x}`}).join(`\n\t`)}`
+    );
+    ctx.wizard.next();
+  }
+
   @WizardStep(3)
+  async categoryStep(@Ctx() ctx: Scenes.WizardContext){
+    if(ctx.message){
+      const group: Group = ctx.wizard.state['group']
+      const message = ctx.message['text']
+      const selected = parseInt(message)
+      if( !isNaN(selected) && selected > -1 && selected < group.instalment_categories.length){
+        ctx.wizard.state['category'] = group.instalment_categories[message];
+        await ctx.reply(`Categoria ${ctx.wizard.state['category']} \n¿Me describis de que es este gasto?`);
+        ctx.wizard.next();
+      } else {
+          await ctx.reply(`Lo siento la categoria ingresada no es valida. \nIngresala nuevamente:`);
+          return
+      }
+    }
+  }
+
+
+  @WizardStep(4)
   async step3(@Ctx() ctx: Scenes.WizardContext) {
       if(ctx.message){
         ctx.wizard.state['description'] = ctx.message['text'];
@@ -65,7 +79,7 @@ export class InstallmentWizard {
       }
   }
 
-  @WizardStep(4)
+  @WizardStep(5)
   async step4(@Ctx() ctx: Scenes.WizardContext) {
     if(ctx.message){
       const accounts: string[] = ctx.wizard.state['group'].accounts
@@ -81,7 +95,7 @@ export class InstallmentWizard {
     }
   }
 
-  @WizardStep(5)
+  @WizardStep(6)
   async step5(@Ctx() ctx: Scenes.WizardContext) {
       if(ctx.message){
         const holders: string[] = ctx.wizard.state['group'].holders
@@ -97,7 +111,7 @@ export class InstallmentWizard {
     }
   }
 
-  @WizardStep(6)
+  @WizardStep(7)
   async step6(@Ctx() ctx: Scenes.WizardContext) {
       if(ctx.message){
         const instalments = parseInt(ctx.message['text']);
@@ -112,7 +126,7 @@ export class InstallmentWizard {
   }
 
 
-  @WizardStep(7)
+  @WizardStep(8)
   async step7(@Ctx() ctx: Scenes.WizardContext) {
     if(ctx.message){
         const debit = parseFloat(ctx.message['text']);
@@ -135,7 +149,7 @@ export class InstallmentWizard {
         await ctx.reply(
           `Ok, confirmemos datos entonces.
             ✅ Este es el gasto:
-                Categoria: ${ctx.wizard.state['group'].instalment_category}
+                Categoria: ${ctx.wizard.state['category']}
                 Descripcion: ${ctx.wizard.state['description']}
                 Cuenta: ${ctx.wizard.state['account']}
                 Titular: ${ctx.wizard.state['owner']}
@@ -162,7 +176,7 @@ export class InstallmentWizard {
     for(let i = 0; i < instalmentsDates.length; i++){
         const sheetArray = [
             instalmentsDates[i],
-            ctx.wizard.state['group'].instalment_category,
+            ctx.wizard.state['category'],
             `${ctx.wizard.state['description']} - Cuota ${i+1} de ${ctx.wizard.state['instalments']}`,
             ctx.wizard.state['account'],
             ctx.wizard.state['owner'],
