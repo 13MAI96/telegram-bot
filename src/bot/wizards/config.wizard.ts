@@ -31,7 +31,7 @@ Menu (responder solo con el numero):
   async switchMenu(@Ctx() ctx: Scenes.WizardContext){
     if(ctx.message){
         const option: number = parseInt(ctx.message['text'])
-        if(option && 0 < option && option < 6 ){
+        if(!isNaN(option) && 0 < option && option < 6 ){
             switch (option) {
                 case 1:
                     this.changeScene(ctx, 'users')

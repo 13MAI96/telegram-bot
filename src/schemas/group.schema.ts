@@ -40,7 +40,7 @@ export class Group {
   holders: string[]
 
   @Prop()
-  instalment_category: string;
+  instalment_categories: string[];
 
   @Prop()
   self_transfer_category: string

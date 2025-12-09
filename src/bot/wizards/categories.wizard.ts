@@ -15,8 +15,10 @@ export class CategoriesWizard {
     await ctx.reply(
         `
 Que accion deseas realizar:
-    1. Agregar categoria
-    2. Remover categoria
+    1. Agregar categoria a gastos
+    2. Remover categoria de gastos
+    3. Agregar categoria a cuotas
+    4. Remover categoria de cuotas
         `
     );
     await ctx.wizard.next();
@@ -41,6 +43,22 @@ ${categories.map((x, index) => `${index}. ${x}`).join(`\n`)}
                     `)
                 await ctx.wizard.selectStep(5)
                 break;
+            /**
+             * INSTALMENTS
+             */
+            case 3:
+              await ctx.reply(`Que categorias deseas agregar? Envialas separadas por coma.`)
+              await ctx.wizard.selectStep(7)
+              break
+            case 4:
+              const instalment_categories: string[] = ctx.wizard.state['group'].instalment_categories
+              await ctx.reply(`
+Estas son las categorias actuales:
+${instalment_categories.map((x, index) => `${index}. ${x}`).join(`\n`)}
+\nCual de ellas deseas eliminar?
+                `)
+              await ctx.wizard.selectStep(9)
+              break
             default:
                 await ctx.reply(`La opcion elegida no es valida.`)
                 break;
@@ -70,7 +88,6 @@ ${categories.join(`\n`)}
   }
 
   @WizardStep(4)
-  @WizardStep(4)
   @Hears(/sí|si|Si/i)
   async addCategories(@Ctx() ctx: Scenes.WizardContext){
     const group: Group = ctx.wizard.state['group']
@@ -91,7 +108,7 @@ ${categories.join(`\n`)}
 
 
   /**
-   * Steps for remove a category start here.
+   * Steps to remove a category start here.
    * 
    */
   @WizardStep(5)
@@ -114,6 +131,54 @@ ${categories.join(`\n`)}
               await ctx.scene.enter('categories', {group: group})
           }
     }
+  }
+
+  /**
+   * Steps to add categories to instalments
+   */
+  @WizardStep(7)
+  async addCategoriesProcess(@Ctx() ctx: Scenes.WizardContext){
+    await ctx.wizard.next()
+  }
+
+  @WizardStep(8)
+  async readInstalmentCategory(@Ctx() ctx: Scenes.WizardContext) {
+    if(ctx.message){
+        const message = ctx.message['text']
+            const categories: string[] = message
+                .split(',')
+                .map(v => v.trim())
+                .filter(v => v.length > 0);
+            ctx.wizard.state['instalment_categories'] = categories
+            await ctx.reply(
+                `
+Estas son las categorias que detecte:
+${categories.join(`\n`)}
+\nSon correctas? 
+                `
+            )
+            await ctx.wizard.next()
+    }
+  }
+
+  @WizardStep(9)
+  @Hears(/sí|si|Si/i)
+  async addInstalmentCategories(@Ctx() ctx: Scenes.WizardContext){
+    const group: Group = ctx.wizard.state['group']
+    const categories: string[] = ctx.wizard.state['instalment_categories']
+    if(!group.instalment_categories) group.instalment_categories = []
+    group.instalment_categories.push(...categories)
+    await this.groupService.update(group._id, group)
+    await ctx.reply(`Listo, las categorias ya fueron agregadas.`)
+    await ctx.scene.leave()
+    await ctx.scene.enter('categories', {group: group})
+  }
+
+  @WizardStep(9)
+  @Hears(/no|No/i)
+  async rejectAddInstalmentCategories(@Ctx() ctx: Scenes.WizardContext){
+    await ctx.reply('Okay, vamos otra vez. Enviame las categorias separadas por coma:')
+    await ctx.wizard.selectStep(2)
   }
 
 
