@@ -6,6 +6,7 @@ import { ConfigWizard } from "./config.wizard"
 import { GroupWizard } from "./group.wizard"
 import { InstallmentWizard } from "./instalment.wizard"
 import { MemberWizard } from "./member.wizard"
+import { PlaneTextWizard } from "./plane-text.wizard"
 import { TransferWizard } from "./transfer.wizard"
 import { UsersWizard } from "./users.wizard"
 
@@ -18,6 +19,7 @@ const Wizards = [
     GroupWizard,
     InstallmentWizard,
     MemberWizard,
+    PlaneTextWizard,
     TransferWizard,
     UsersWizard,
 ]

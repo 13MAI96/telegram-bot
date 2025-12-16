@@ -3,13 +3,15 @@ import { Scenes } from 'telegraf';
 import { SheetsService } from 'src/sheets/sheets.service';
 import { Group } from 'src/schemas/group.schema';
 import { DateService } from 'src/shared/services/date.service';
+import { NumberService } from 'src/shared/services/number.service';
 
 @Wizard('instalment')
 export class InstallmentWizard {
 
   constructor(
     private sheetsService: SheetsService,
-    private dateService: DateService
+    private dateService: DateService,
+    private numberService: NumberService
   ){}
 
 
@@ -129,9 +131,9 @@ ${group.instalment_categories.map((x, index) => {return `${index}. ${x}`}).join(
   @WizardStep(8)
   async step7(@Ctx() ctx: Scenes.WizardContext) {
     if(ctx.message){
-        const debit = parseFloat(ctx.message['text']);
+        const debit = this.numberService.toNumber(ctx.message['text']);
         const instalments = ctx.wizard.state['instalments']
-        if (isNaN(debit) || debit < 0) {
+        if (debit < 0) {
           await ctx.reply('🚫 Monto invalido. Ingresá un número válido.');
           return;
         }

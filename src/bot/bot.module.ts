@@ -15,6 +15,7 @@ import { OneTimeToken, OneTimeTokenSchema } from 'src/schemas/token.schema';
 import Wizards from './wizards';
 import { SharedModule } from 'src/shared/shared.module';
 import { DateService } from 'src/shared/services/date.service';
+import { NumberService } from 'src/shared/services/number.service';
 
 
 @Module({
@@ -26,7 +27,8 @@ import { DateService } from 'src/shared/services/date.service';
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => ({
         token: configService.get<string>('BOT_TOKEN') ?? '',
-        middlewares: [session()]
+        middlewares: [session()],
+        launchOptions: false,
       }),
     }),
     GroupModule,
@@ -40,7 +42,8 @@ import { DateService } from 'src/shared/services/date.service';
     GroupService,
     SheetsService,
     TokenService,
-    DateService
+    DateService,
+    NumberService,
   ],
 })
 export class BotModule {}

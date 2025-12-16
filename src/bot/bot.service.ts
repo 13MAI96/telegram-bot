@@ -1,15 +1,42 @@
-import { Update, Start, Help, Hears, Ctx, Command } from 'nestjs-telegraf';
+import { OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { Update, Start, Help, Hears, Ctx, Command, On, InjectBot } from 'nestjs-telegraf';
 import { GroupService } from 'src/group/group.service';
-import { Context, Scenes } from 'telegraf';
+import { Context, Scenes, Telegraf } from 'telegraf';
 
 
 @Update()
-export class BotUpdate {
+export class BotUpdate implements OnModuleInit, OnModuleDestroy {
 
   constructor(
     private groupService: GroupService,
+    @InjectBot() private readonly bot: Telegraf
   ){
+
   }
+
+
+  async onModuleInit() {
+    await this.bot.telegram.deleteWebhook({ drop_pending_updates: true });
+    this.startWithRetry()
+  }
+
+  async onModuleDestroy() {
+    await this.bot.stop();
+  }
+
+  private async startWithRetry(delay = 30000) {
+    try {
+      await this.bot.launch().then(x => console.log(x));
+    } catch (err) {
+      if (err.code === 409) {
+        console.warn(`Retrying bot start in ${delay / 1000}s`);
+        setTimeout(() => this.startWithRetry(delay), delay);
+        return;
+      }
+      throw err;
+    }
+  }
+
 
 
   @Start()
@@ -97,6 +124,18 @@ export class BotUpdate {
       const group = await this.groupService.hasAssignedGroup(`${ctx.message?.from.id}`)
       if(group){ 
         await ctx.scene.enter('balance', {group: group})
+      } else {
+        await ctx.scene.enter('new-group')
+      }
+    }
+  }
+
+  @On('text')
+  async planeTextManager(@Ctx() ctx: Scenes.SceneContext){
+    if(ctx.message?.from.id ){
+      const group = await this.groupService.hasAssignedGroup(`${ctx.message.from.id}`)
+      if(group){
+        await ctx.scene.enter('plane-text', {group: group, text: ctx.message['text']})
       } else {
         await ctx.scene.enter('new-group')
       }
