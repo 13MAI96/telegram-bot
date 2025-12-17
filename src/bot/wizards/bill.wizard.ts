@@ -34,6 +34,19 @@ export class BillWizard {
   }
 
   @WizardStep(2)
+  @Hears(/ayer/i)
+  async yesterday(@Ctx() ctx: Scenes.WizardContext) {
+    const group: Group = ctx.wizard.state['group']
+    const date = new Date()
+    date.setDate(date.getDate() - 1);
+    ctx.wizard.state['date'] = this.dateService.formatDateToDDMMYYYY(date);
+    await ctx.reply(`Fecha: ${ctx.wizard.state['date']} \n¿A cual de estas categoria corresponde? (Mandame solo el numero.)
+  ${group.categories.map((x, index) => {return `${index}. ${x}`}).join(`\n\t`)}`
+        );
+    ctx.wizard.next();
+  }
+
+  @WizardStep(2)
   async step2(@Ctx() ctx: Scenes.WizardContext) {
     const group: Group = ctx.wizard.state['group']
     if(ctx.message && this.dateService.isValidDate(ctx.message['text'])){

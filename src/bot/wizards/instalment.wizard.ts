@@ -35,6 +35,23 @@ export class InstallmentWizard {
     await this.step2Default(ctx)
   }
 
+  
+  @WizardStep(2)
+  @Hears(/sig\s+\d+/i)
+  async nextMonth(@Ctx() ctx: Scenes.WizardContext){
+    if(ctx.message){
+      const text = ctx.message['text']
+      const match = text.match(/prox\s*(\d+)/i);
+      const day = match ? Number(match[1]) : null;
+      const date = new Date()
+      date.setMonth(date.getMonth()+1)
+      date.setDate(10)
+      ctx.wizard.state['date'] = this.dateService.formatDateToDDMMYYYY(date);
+      await this.step2Default(ctx)
+    }
+  }
+
+
   @WizardStep(2)
   async step2(@Ctx() ctx: Scenes.WizardContext) {
     if(ctx.message && this.dateService.isValidDate(ctx.message['text'])){

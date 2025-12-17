@@ -1,7 +1,5 @@
-import { Wizard, WizardStep, Ctx, Hears, Command } from 'nestjs-telegraf';
+import { Wizard, WizardStep, Ctx, Command } from 'nestjs-telegraf';
 import { Scenes } from 'telegraf';
-import { Sheet } from 'src/schemas/sheet.schema';
-import { CreateGroupDto } from 'src/group/dto/create-group.dto';
 import { GroupService } from 'src/group/group.service';
 import { TokenService } from 'src/token/token.service';
 import { Group } from 'src/schemas/group.schema';
