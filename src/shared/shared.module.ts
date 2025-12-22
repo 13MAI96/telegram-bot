@@ -9,7 +9,8 @@ import { NumberService } from './services/number.service';
   providers: [
     DateService,
     CsvService,
-    ExcelService
+    ExcelService, 
+    NumberService,
   ],
   exports: [
     DateService,
