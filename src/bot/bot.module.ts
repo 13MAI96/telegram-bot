@@ -17,6 +17,7 @@ import { SharedModule } from 'src/shared/shared.module';
 import { DateService } from 'src/shared/services/date.service';
 import { CsvService } from 'src/shared/services/csv.service';
 import { ExcelService } from 'src/shared/services/excel.service';
+import { NumberService } from 'src/shared/services/number.service';
 
 
 @Module({
@@ -28,7 +29,8 @@ import { ExcelService } from 'src/shared/services/excel.service';
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => ({
         token: configService.get<string>('BOT_TOKEN') ?? '',
-        middlewares: [session()]
+        middlewares: [session()],
+        launchOptions: false,
       }),
     }),
     GroupModule,
@@ -44,7 +46,8 @@ import { ExcelService } from 'src/shared/services/excel.service';
     TokenService,
     DateService,
     CsvService,
-    ExcelService
+    ExcelService,
+    NumberService,
   ],
 })
 export class BotModule {}

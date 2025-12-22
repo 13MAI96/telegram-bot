@@ -3,12 +3,14 @@ import { Scenes } from 'telegraf';
 import { SheetsService } from 'src/sheets/sheets.service';
 import { Group } from 'src/schemas/group.schema';
 import { DateService } from 'src/shared/services/date.service';
+import { NumberService } from 'src/shared/services/number.service';
 
 @Wizard('bill')
 export class BillWizard {
   constructor(
     private sheetsService: SheetsService,
-    private dateService: DateService
+    private dateService: DateService,
+    private numberService: NumberService
   ){}
 
 
@@ -24,6 +26,19 @@ export class BillWizard {
   async today(@Ctx() ctx: Scenes.WizardContext) {
     const group: Group = ctx.wizard.state['group']
     const date = new Date()
+    ctx.wizard.state['date'] = this.dateService.formatDateToDDMMYYYY(date);
+    await ctx.reply(`Fecha: ${ctx.wizard.state['date']} \n¿A cual de estas categoria corresponde? (Mandame solo el numero.)
+  ${group.categories.map((x, index) => {return `${index}. ${x}`}).join(`\n\t`)}`
+        );
+    ctx.wizard.next();
+  }
+
+  @WizardStep(2)
+  @Hears(/ayer/i)
+  async yesterday(@Ctx() ctx: Scenes.WizardContext) {
+    const group: Group = ctx.wizard.state['group']
+    const date = new Date()
+    date.setDate(date.getDate() - 1);
     ctx.wizard.state['date'] = this.dateService.formatDateToDDMMYYYY(date);
     await ctx.reply(`Fecha: ${ctx.wizard.state['date']} \n¿A cual de estas categoria corresponde? (Mandame solo el numero.)
   ${group.categories.map((x, index) => {return `${index}. ${x}`}).join(`\n\t`)}`
@@ -107,8 +122,8 @@ export class BillWizard {
   @WizardStep(7)
   async step7(@Ctx() ctx: Scenes.WizardContext) {
     if(ctx.message){
-        const debit = parseFloat(ctx.message['text']);
-        if (isNaN(debit) || debit < 0) {
+        const debit = this.numberService.toNumber(ctx.message['text']);
+        if (debit < 0) {
           await ctx.reply('🚫 Monto invalido. Ingresá un número válido.');
           return;
         }
@@ -121,8 +136,8 @@ export class BillWizard {
   @WizardStep(8)
   async step8(@Ctx() ctx: Scenes.WizardContext) {
     if(ctx.message){
-        const credit = parseFloat(ctx.message['text']);
-        if (isNaN(credit) || credit < 0) {
+        const credit = this.numberService.toNumber(ctx.message['text']);
+        if (credit < 0) {
           await ctx.reply('🚫 Monto invalido. Ingresá un número válido.');
           return;
         }

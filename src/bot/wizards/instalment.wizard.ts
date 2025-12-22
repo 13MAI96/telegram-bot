@@ -3,13 +3,15 @@ import { Scenes } from 'telegraf';
 import { SheetsService } from 'src/sheets/sheets.service';
 import { Group } from 'src/schemas/group.schema';
 import { DateService } from 'src/shared/services/date.service';
+import { NumberService } from 'src/shared/services/number.service';
 
 @Wizard('instalment')
 export class InstallmentWizard {
 
   constructor(
     private sheetsService: SheetsService,
-    private dateService: DateService
+    private dateService: DateService,
+    private numberService: NumberService
   ){}
 
 
@@ -32,6 +34,23 @@ export class InstallmentWizard {
     ctx.wizard.state['date'] = this.dateService.formatDateToDDMMYYYY(date);
     await this.step2Default(ctx)
   }
+
+  
+  @WizardStep(2)
+  @Hears(/sig\s+\d+/i)
+  async nextMonth(@Ctx() ctx: Scenes.WizardContext){
+    if(ctx.message){
+      const text = ctx.message['text']
+      const match = text.match(/prox\s*(\d+)/i);
+      const day = match ? Number(match[1]) : null;
+      const date = new Date()
+      date.setMonth(date.getMonth()+1)
+      date.setDate(10)
+      ctx.wizard.state['date'] = this.dateService.formatDateToDDMMYYYY(date);
+      await this.step2Default(ctx)
+    }
+  }
+
 
   @WizardStep(2)
   async step2(@Ctx() ctx: Scenes.WizardContext) {
@@ -129,9 +148,9 @@ ${group.instalment_categories.map((x, index) => {return `${index}. ${x}`}).join(
   @WizardStep(8)
   async step7(@Ctx() ctx: Scenes.WizardContext) {
     if(ctx.message){
-        const debit = parseFloat(ctx.message['text']);
+        const debit = this.numberService.toNumber(ctx.message['text']);
         const instalments = ctx.wizard.state['instalments']
-        if (isNaN(debit) || debit < 0) {
+        if (debit < 0) {
           await ctx.reply('🚫 Monto invalido. Ingresá un número válido.');
           return;
         }

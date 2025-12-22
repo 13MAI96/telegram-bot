@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { DateService } from './services/date.service';
 import { CsvService } from './services/csv.service';
 import { ExcelService } from './services/excel.service';
+import { NumberService } from './services/number.service';
 
 @Module({
   imports: [],
@@ -13,7 +14,8 @@ import { ExcelService } from './services/excel.service';
   exports: [
     DateService,
     CsvService,
-    ExcelService
-  ],
+    ExcelService,
+    NumberService
+  ]
 })
 export class SharedModule {}

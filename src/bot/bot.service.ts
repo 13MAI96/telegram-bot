@@ -1,28 +1,72 @@
-import { Update, Start, Help, Hears, Ctx, Command, On } from 'nestjs-telegraf';
+import { Update, Start, Help, Hears, Ctx, Command, On, InjectBot } from 'nestjs-telegraf';
 import { GroupService } from 'src/group/group.service';
 import { CsvService } from 'src/shared/services/csv.service';
-import { Context, Scenes } from 'telegraf';
 import * as fs from 'fs'
+import { OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { Context, Scenes, Telegraf } from 'telegraf';
 
 
 @Update()
-export class BotUpdate {
+export class BotUpdate implements OnModuleInit, OnModuleDestroy {
 
   constructor(
     private groupService: GroupService,
-    private csvService: CsvService
-  ){
+    private csvService: CsvService,
+    @InjectBot() private readonly bot: Telegraf
+  ){}
+
+  /**
+   * Bot inicialization process
+   * @function onModuleInit try to clean previous opened webhook.
+   * @function onModuleDestroy try to finish a current webhook before close the app.
+   * @function startWithRetry will try to launch the bot, if there is a error 409, that means another webhook still working, this function set a timer to try again.
+   */
+
+  async onModuleInit() {
+    await this.bot.telegram.deleteWebhook({ drop_pending_updates: true });
+    this.startWithRetry()
+  }
+
+  async onModuleDestroy() {
+    await this.bot.stop();
+  }
+
+  private async startWithRetry(delay = 30000) {
+    try {
+      await this.bot.launch().then(x => console.log(x));
+    } catch (err) {
+      if (err.code === 409) {
+        console.warn(`Retrying bot start in ${delay / 1000}s`);
+        setTimeout(() => this.startWithRetry(delay), delay);
+        return;
+      }
+      throw err;
+    }
   }
 
 
+  /**
+   * Bot commads and listenings.
+   */
+
+  /**
+   * @function start return a default message.
+   */
   @Start()
   async start(@Ctx() ctx: Context) {
     await ctx.reply('👋 ¡Hola! Soy MAI tu bot de Telegram.');
   }
 
+  /**
+   * @function help must return a list of command and options for use bot's functionalities.
+   */
   @Help()
   async help(@Ctx() ctx: Context) {
-    await ctx.reply('Estos son los comandos disponibles:\n/gasto - Iniciar\n/help - Ayuda');
+    await ctx.reply(`
+Estos son los comandos disponibles:
+/gasto - Iniciar
+/help - Ayuda
+`);
   }
 
   @Hears('Hola')
@@ -33,6 +77,9 @@ export class BotUpdate {
     }
   }
 
+  /**
+   * @function config open the configuration wizard
+   */
   @Command('config')
   async startConfig(@Ctx() ctx: Scenes.SceneContext){
     if(ctx.message?.from.id){
@@ -109,6 +156,18 @@ export class BotUpdate {
   @Hears(/mayores/i)
   async maestros(@Ctx() ctx: Scenes.SceneContext){
     await ctx.scene.enter('espe')
+  }
+  
+  @On('text')
+  async planeTextManager(@Ctx() ctx: Scenes.SceneContext){
+    if(ctx.message?.from.id ){
+      const group = await this.groupService.hasAssignedGroup(`${ctx.message.from.id}`)
+      if(group){
+        await ctx.scene.enter('plane-text', {group: group, text: ctx.message['text']})
+      } else {
+        await ctx.scene.enter('new-group')
+      }
+    }
   }
 
 }
