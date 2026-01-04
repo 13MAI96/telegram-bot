@@ -22,6 +22,10 @@ export class PlaneTextWizard {
         .split(',')
         .map(v => v.trim())
         .filter(v => v.length > 0);
+    if(bill.length < 4){
+      ctx.reply('Comando invalido.')
+      return ctx.scene.leave()
+    }
     const category = group.categories.find(x => x.toLowerCase() == bill[1].toLowerCase())
     const account = group.accounts.find(x => x.toLowerCase() == bill[3].toLowerCase())
     const holder = group.holders.find(x => x.toLowerCase() == bill[4].toLowerCase())
