@@ -41,11 +41,11 @@ export class InstallmentWizard {
   async nextMonth(@Ctx() ctx: Scenes.WizardContext){
     if(ctx.message){
       const text = ctx.message['text']
-      const match = text.match(/prox\s*(\d+)/i);
-      const day = match ? Number(match[1]) : null;
+      const match = text.match(/sig\s*(\d+)/i);
+      const day = match ? Number(match[1]) : 10;
       const date = new Date()
       date.setMonth(date.getMonth()+1)
-      date.setDate(10)
+      date.setDate(day)
       ctx.wizard.state['date'] = this.dateService.formatDateToDDMMYYYY(date);
       await this.step2Default(ctx)
     }
@@ -130,6 +130,28 @@ ${group.instalment_categories.map((x, index) => {return `${index}. ${x}`}).join(
     }
   }
 
+  /**
+   * Agregar zeta a opcion de cuotas
+   */
+
+  @WizardStep(7)
+  @Hears(/zeta\s+\d+/i)
+  async zeta6(@Ctx() ctx: Scenes.WizardContext) {
+    if(ctx.message){
+      const text = ctx.message['text']
+      const match = text.match(/zeta\s*(\d+)/i);
+      const instalments = match ? Number(match[1]) : 3;
+      if (isNaN(instalments) || instalments < 1) {
+          await ctx.reply('🚫 Cantidad de cuotas invalida. Ingresá un número válido.');
+          return;
+      }
+      ctx.wizard.state['zeta'] = true
+      ctx.wizard.state['instalments'] = instalments
+      await ctx.reply('💸 ¿Cuanto gastaste?')
+      ctx.wizard.next()
+    }
+  }
+
   @WizardStep(7)
   async step6(@Ctx() ctx: Scenes.WizardContext) {
       if(ctx.message){
@@ -138,12 +160,16 @@ ${group.instalment_categories.map((x, index) => {return `${index}. ${x}`}).join(
           await ctx.reply('🚫 Cantidad de cuotas invalida. Ingresá un número válido.');
           return;
         }
+        ctx.wizard.state['zeta'] = false
        ctx.wizard.state['instalments'] = instalments
        await ctx.reply('💸 ¿Cuanto gastaste?')
        ctx.wizard.next()
     }
   }
 
+  /**
+   * Agregar impuestos al sello? 1.2% del total
+   */
 
   @WizardStep(8)
   async step7(@Ctx() ctx: Scenes.WizardContext) {
@@ -190,21 +216,37 @@ ${group.instalment_categories.map((x, index) => {return `${index}. ${x}`}).join(
   @Hears(/sí|si|Si/i)
   async confirm(@Ctx() ctx: Scenes.WizardContext) {
     const instalmentsDates = ctx.wizard.state['instalment_dates']
+    const zeta: boolean = ctx.wizard.state['zeta']
     const group: Group = ctx.wizard.state['group']
     await ctx.reply('Okay,dame unos segundos mientras guardo la info.')
     for(let i = 0; i < instalmentsDates.length; i++){
         const sheetArray = [
             instalmentsDates[i],
             ctx.wizard.state['category'],
-            `${ctx.wizard.state['description']} - Cuota ${i+1} de ${ctx.wizard.state['instalments']}`,
+            zeta && instalmentsDates.length > 1 && i > 0 
+            ? `Zeta ${this.dateService.getMonthString(instalmentsDates[0])}`
+            : `${ctx.wizard.state['description']} - Cuota ${i+1} de ${ctx.wizard.state['instalments']}`,
             ctx.wizard.state['account'],
             ctx.wizard.state['owner'],
             ctx.wizard.state['debit'],
             0,
             ctx.wizard.state['created_by']
         ]
+        const stamp = [
+          instalmentsDates[i],
+          ctx.wizard.state['category'],
+          `Impuesto al sello`,
+          ctx.wizard.state['account'],
+          ctx.wizard.state['owner'],
+          Math.round((ctx.wizard.state['debit']*0.015)*100)/100,
+          0,
+          ctx.wizard.state['created_by']
+        ]
         await this.sheetsService.addRow(group).then(() => this.sheetsService.pushData(sheetArray, group)).finally(async () => {
             await ctx.reply(`Ya registre la cuota nº${i+1}`)
+            await this.sheetsService.addRow(group).then(() => this.sheetsService.pushData(stamp, group)).finally( async ()=> {
+              await ctx.reply(`Ya agregue el concepto de impuesto al sello para la misma.`)
+            })
         })
     }
     await ctx.reply('🎉 ¡Registro completado!');

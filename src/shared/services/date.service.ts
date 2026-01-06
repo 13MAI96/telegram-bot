@@ -3,6 +3,8 @@ import { Injectable } from '@nestjs/common'
 @Injectable()
 export class DateService {
 
+  private enum_months: string[] = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC']
+
   public isValidDate = (value: string): boolean => {
     const match = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
     if (!match) return false;
@@ -66,4 +68,11 @@ export class DateService {
     return this.formatDateToDDMMYYYY(target);
   }
 
+  public getMonthString = (date: string): string => {
+    const month: number = this.parseDateFromDDMMYYYY(date)?.getMonth() ?? -1
+    if(month > -1 && month < 12){
+      return this.enum_months[month]
+    }
+    return 'INVALID'
+  }
 }
