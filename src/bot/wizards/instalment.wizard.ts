@@ -238,7 +238,7 @@ ${group.instalment_categories.map((x, index) => {return `${index}. ${x}`}).join(
           `Impuesto al sello`,
           ctx.wizard.state['account'],
           ctx.wizard.state['owner'],
-          Math.round((ctx.wizard.state['debit']*0.012)*100)/100,
+          Math.round((ctx.wizard.state['debit']*0.015)*100)/100,
           0,
           ctx.wizard.state['created_by']
         ]
