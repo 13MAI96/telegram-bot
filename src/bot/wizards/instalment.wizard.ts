@@ -168,7 +168,7 @@ ${group.instalment_categories.map((x, index) => {return `${index}. ${x}`}).join(
   }
 
   /**
-   * Agregar impuestos al sello? 1.2% del total
+   * Agregar impuestos al sello? 1.5% del total
    */
 
   @WizardStep(8)
@@ -235,7 +235,7 @@ ${group.instalment_categories.map((x, index) => {return `${index}. ${x}`}).join(
         const stamp = [
           instalmentsDates[i],
           ctx.wizard.state['category'],
-          `Impuesto al sello`,
+          `IMP AL SELLO (1.5%)`,
           ctx.wizard.state['account'],
           ctx.wizard.state['owner'],
           Math.round((ctx.wizard.state['debit']*0.015)*100)/100,
