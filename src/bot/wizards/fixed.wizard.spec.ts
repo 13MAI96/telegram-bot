@@ -49,7 +49,7 @@ describe('FixedWizard', () => {
             wizardMessageService,
         );
         const ctx = createCtx({
-            message: { text: '12/06/2026', from: { first_name: 'Tester' } },
+            message: { text: '12/04/2026', from: { first_name: 'Tester' } },
             wizard: {
                 state: {
                     group: {
@@ -64,7 +64,7 @@ describe('FixedWizard', () => {
 
         await wizard.step2(ctx);
 
-        expect(ctx.wizard.state.date).toBe('12/06/2026');
+        expect(ctx.wizard.state.date).toBe('12/04/2026');
         expect(ctx.wizard.next).toHaveBeenCalled();
     });
 
@@ -109,7 +109,7 @@ describe('FixedWizard', () => {
             wizardMessageService,
         );
         const ctx = createCtx({
-            message: { text: '11/06/2026', from: { first_name: 'Tester' } },
+            message: { text: '11/04/2026', from: { first_name: 'Tester' } },
             wizard: {
                 state: {
                     group: {

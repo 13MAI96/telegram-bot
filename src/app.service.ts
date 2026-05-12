@@ -3,7 +3,7 @@ import { Injectable } from '@nestjs/common';
 @Injectable()
 export class AppService {
     constructor() {
-        this.getPublicIp();
+        void this.getPublicIp();
     }
 
     getHello(): string {
@@ -11,8 +11,17 @@ export class AppService {
     }
 
     private getPublicIp = async () => {
-        const req = await fetch('https://api.ipify.org?format=json');
-        const res = await req.json();
-        console.log(res.ip);
+        try {
+            const req = await fetch('https://api.ipify.org?format=json');
+            const res = (await req.json()) as { ip?: string };
+            if (res.ip) {
+                console.log(res.ip);
+            }
+        } catch (error) {
+            console.warn(
+                'Unable to fetch public IP during startup:',
+                error instanceof Error ? error.message : String(error),
+            );
+        }
     };
 }

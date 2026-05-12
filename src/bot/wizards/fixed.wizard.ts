@@ -312,7 +312,7 @@ ${group.categories.map((value, index) => `${index}. ${value}`).join('\n')}`);
         const today = new Date();
         const todayLabel = this.dateService.formatDateToDDMMYYYY(today);
         const lowerBound =
-            this.dateService.addMonthsExactDDMMYYYY(todayLabel, 1) ??
+            this.dateService.addMonthsExactDDMMYYYY(todayLabel, -1) ??
             todayLabel;
         const upperBound =
             this.dateService.addMonthsExactDDMMYYYY(todayLabel, 12) ??

@@ -15,14 +15,14 @@ The system SHALL expose a `/suscripcion` command that starts a fixed recurring c
 ### Requirement: Fixed wizard validates input and keeps the user on the current step on failure
 The system SHALL validate the initial charge date, category, account, holder, debit amount, and repetition count while keeping the user on the same step until a valid value is received.
 
-#### Scenario: Initial date is outside the allowed future window
-- **WHEN** the user provides a first charge date that is less than one month ahead or more than one year ahead of the current date
+#### Scenario: Initial date is outside the allowed window
+- **WHEN** the user provides a first charge date that is more than one month behind or more than one year ahead of the current date
 - **THEN** the wizard MUST reject the value
 - **THEN** the wizard MUST explain the date constraint to the user
 - **THEN** the wizard MUST remain on the same step waiting for a valid date
 
 #### Scenario: Initial date matches an allowed boundary
-- **WHEN** the user provides a first charge date that is exactly one month ahead or exactly one year ahead of the current date
+- **WHEN** the user provides a first charge date that is exactly one month behind or exactly one year ahead of the current date
 - **THEN** the wizard MUST accept the value as inside the allowed range
 
 #### Scenario: Repetition count is outside the allowed range
