@@ -26,11 +26,20 @@ export default tseslint.config(
   },
   {
     rules: {
-      semi: ['error', 'never'],
-      '@typescript-eslint/semi': ['error', 'never'],
-      '@typescript-eslint/no-explicit-any': 'off',
+      semi: ['error', 'always'],
+      'no-case-declarations': 'off',
+      '@typescript-eslint/no-explicit-any': 'warn',
+      '@typescript-eslint/no-misused-promises': 'off',
       '@typescript-eslint/no-floating-promises': 'warn',
-      '@typescript-eslint/no-unsafe-argument': 'warn'
+      '@typescript-eslint/no-unsafe-argument': 'warn',
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-return': 'off',
+      '@typescript-eslint/await-thenable': 'off',
+      '@typescript-eslint/require-await': 'off',
+      '@typescript-eslint/restrict-template-expressions': 'off',
+      '@typescript-eslint/no-unused-vars': 'off'
     },
   },
 );

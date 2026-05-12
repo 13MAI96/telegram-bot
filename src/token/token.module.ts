@@ -4,12 +4,12 @@ import { OneTimeToken, OneTimeTokenSchema } from 'src/schemas/token.schema';
 import { TokenService } from './token.service';
 
 @Module({
-  imports: [
-    MongooseModule.forFeature([
-      { name: OneTimeToken.name, schema: OneTimeTokenSchema },
-    ]),
-  ],
-  providers: [TokenService],
-  exports: [TokenService],
+    imports: [
+        MongooseModule.forFeature([
+            { name: OneTimeToken.name, schema: OneTimeTokenSchema },
+        ]),
+    ],
+    providers: [TokenService],
+    exports: [TokenService],
 })
 export class TokenModule {}

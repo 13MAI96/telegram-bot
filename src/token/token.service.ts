@@ -6,32 +6,32 @@ import { OneTimeToken } from 'src/schemas/token.schema';
 
 @Injectable()
 export class TokenService {
-  constructor(
-    @InjectModel(OneTimeToken.name) private tokenModel: Model<OneTimeToken>,
-  ) {}
+    constructor(
+        @InjectModel(OneTimeToken.name) private tokenModel: Model<OneTimeToken>,
+    ) {}
 
-  async generateTokenForUser(sub: string): Promise<string> {
-    const token = crypto.randomBytes(20).toString('hex');
-    const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+    async generateTokenForUser(sub: string): Promise<string> {
+        const token = crypto.randomBytes(20).toString('hex');
+        const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
-    await this.tokenModel.create({ token, expiresAt, sub });
-    return token;
-  }
+        await this.tokenModel.create({ token, expiresAt, sub });
+        return token;
+    }
 
-  async validateAndUseToken(token: string): Promise<Boolean> {
-    const doc = await this.tokenModel.findOne({ token });
+    async validateAndUseToken(token: string): Promise<boolean> {
+        const doc = await this.tokenModel.findOne({ token });
 
-    if (!doc){ 
-      // throw new BadRequestException('Token inválido o expirado')
-      return false
-    };
-    if (doc.used){
-      // throw new BadRequestException('Token ya utilizado')
-      return false
-    };
+        if (!doc) {
+            // throw new BadRequestException('Token inválido o expirado')
+            return false;
+        }
+        if (doc.used) {
+            // throw new BadRequestException('Token ya utilizado')
+            return false;
+        }
 
-    doc.used = true;
-    await doc.save();
-    return true
-  }
+        doc.used = true;
+        await doc.save();
+        return true;
+    }
 }
