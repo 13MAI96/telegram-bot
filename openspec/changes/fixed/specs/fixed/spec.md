@@ -13,7 +13,7 @@ The system SHALL expose a `/suscripcion` command that starts a fixed recurring c
 - **THEN** the system MUST redirect the user through the existing group onboarding path instead of entering the fixed wizard
 
 ### Requirement: Fixed wizard validates input and keeps the user on the current step on failure
-The system SHALL validate the initial charge date, category, account, holder, debit amount, and repetition count while keeping the user on the same step until a valid value is received.
+The system SHALL validate the initial charge date, category, account, holder, debit amount, description, and repetition count while keeping the user on the same step until a valid value is received.
 
 #### Scenario: Initial date is outside the allowed window
 - **WHEN** the user provides a first charge date that is more than one month behind or more than one year ahead of the current date
@@ -31,6 +31,12 @@ The system SHALL validate the initial charge date, category, account, holder, de
 - **THEN** the wizard MUST explain that the accepted range is 1 to 12
 - **THEN** the wizard MUST remain on the same step waiting for a valid count
 
+#### Scenario: Description is empty
+- **WHEN** the user provides an empty description
+- **THEN** the wizard MUST reject the value
+- **THEN** the wizard MUST ask for a non-empty description
+- **THEN** the wizard MUST remain on the same step waiting for a valid description
+
 #### Scenario: Account or holder validation fails
 - **WHEN** the user provides an invalid account or holder
 - **THEN** the wizard MUST reject the value
@@ -38,13 +44,14 @@ The system SHALL validate the initial charge date, category, account, holder, de
 - **THEN** the wizard MUST NOT expose the configured account or holder lists in the recovery reply
 
 ### Requirement: Fixed wizard creates repeated debit rows with constant amount
-The system SHALL create one debit row per repetition using the validated initial date plus monthly repeats, and each row SHALL use the same debit amount provided by the user.
+The system SHALL create one debit row per repetition using the validated initial date plus monthly repeats, and each row SHALL use the same debit amount and base description provided by the user.
 
 #### Scenario: User confirms a valid fixed recurring charge
 - **WHEN** the user confirms the collected fixed recurring charge data
 - **THEN** the system MUST create the configured number of repeated rows
 - **THEN** each row MUST use the same debit amount without installment-style division or adjustment
 - **THEN** each row MUST use a date derived from the initial charge date plus the appropriate monthly offset
+- **THEN** each row MUST use a description formatted as `{descripcion} {indice} de {total}`
 - **THEN** the wizard MUST notify the user after each successfully persisted repetition is added to Excel
 
 #### Scenario: Persistence fails during repeated row creation

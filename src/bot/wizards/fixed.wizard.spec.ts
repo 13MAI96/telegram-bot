@@ -205,6 +205,32 @@ describe('FixedWizard', () => {
         const ctx = createCtx({
             message: { text: '13', from: { first_name: 'Tester' } },
             wizard: {
+                state: { description: 'Netflix' },
+                next: jest.fn(),
+            },
+        });
+
+        await wizard.step8(ctx);
+
+        expect(ctx.wizard.next).not.toHaveBeenCalled();
+        expect(String((ctx.reply as jest.Mock).mock.calls[0][0])).toContain(
+            '1 y 12',
+        );
+    });
+
+    it('rejects empty descriptions', async () => {
+        const sheetsService = {
+            appendBalanceRow: jest.fn(),
+        };
+        const wizard = new FixedWizard(
+            sheetsService as any,
+            dateService,
+            numberService,
+            wizardMessageService,
+        );
+        const ctx = createCtx({
+            message: { text: '   ', from: { first_name: 'Tester' } },
+            wizard: {
                 state: {},
                 next: jest.fn(),
             },
@@ -214,7 +240,7 @@ describe('FixedWizard', () => {
 
         expect(ctx.wizard.next).not.toHaveBeenCalled();
         expect(String((ctx.reply as jest.Mock).mock.calls[0][0])).toContain(
-            '1 y 12',
+            'descripción',
         );
     });
 
@@ -240,6 +266,7 @@ describe('FixedWizard', () => {
                     account: 'CUENTA1',
                     holder: 'Tester',
                     amount: 1000,
+                    description: 'Netflix',
                     repetitions: 3,
                 },
             },
@@ -248,6 +275,11 @@ describe('FixedWizard', () => {
         await wizard.confirm(ctx);
 
         expect(sheetsService.appendBalanceRow).toHaveBeenCalledTimes(3);
+        expect(sheetsService.appendBalanceRow).toHaveBeenNthCalledWith(
+            1,
+            expect.arrayContaining(['Netflix 1 de 3']),
+            expect.anything(),
+        );
         expect((ctx.reply as jest.Mock).mock.calls).toEqual(
             expect.arrayContaining([
                 [expect.stringContaining('Repetición 1/3 agregada a Excel.')],
@@ -283,6 +315,7 @@ describe('FixedWizard', () => {
                     account: 'CUENTA1',
                     holder: 'Tester',
                     amount: 1000,
+                    description: 'Netflix',
                     repetitions: 3,
                 },
             },

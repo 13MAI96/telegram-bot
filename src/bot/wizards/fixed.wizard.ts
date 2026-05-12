@@ -148,14 +148,32 @@ export class FixedWizard {
         }
 
         ctx.wizard.state['amount'] = amount;
-        await ctx.reply(
-            'Monto registrado. ¿Cuántas repeticiones querés crear?',
-        );
+        await ctx.reply('Monto registrado. ¿Qué descripción querés guardar?');
         ctx.wizard.next();
     }
 
     @WizardStep(7)
     async step7(@Ctx() ctx: Scenes.WizardContext) {
+        if (!ctx.message) {
+            await ctx.reply(this.buildDescriptionErrorMessage());
+            return;
+        }
+
+        const description = ctx.message['text'].trim();
+        if (!description) {
+            await ctx.reply(this.buildDescriptionErrorMessage());
+            return;
+        }
+
+        ctx.wizard.state['description'] = description;
+        await ctx.reply(
+            'Descripción registrada. ¿Cuántas repeticiones querés crear?',
+        );
+        ctx.wizard.next();
+    }
+
+    @WizardStep(8)
+    async step8(@Ctx() ctx: Scenes.WizardContext) {
         if (!ctx.message) {
             await ctx.reply(this.buildRepetitionErrorMessage());
             return;
@@ -179,6 +197,7 @@ export class FixedWizard {
                 Cuenta: ${ctx.wizard.state['account']}
                 Titular: ${ctx.wizard.state['holder']}
                 Monto: ${ctx.wizard.state['amount']}
+                Descripción: ${ctx.wizard.state['description']}
                 Repeticiones: ${ctx.wizard.state['repetitions']}
 
             ¿Deseás confirmar? (sí/no)`,
@@ -186,12 +205,13 @@ export class FixedWizard {
         ctx.wizard.next();
     }
 
-    @WizardStep(8)
+    @WizardStep(9)
     @Hears(/sí|si|Si/i)
     async confirm(@Ctx() ctx: Scenes.WizardContext) {
         const group: Group = ctx.wizard.state['group'];
         const repetitions = ctx.wizard.state['repetitions'];
         const amount = ctx.wizard.state['amount'];
+        const description = ctx.wizard.state['description'];
         const category = ctx.wizard.state['category'];
         const account = ctx.wizard.state['account'];
         const holder = ctx.wizard.state['holder'];
@@ -212,7 +232,7 @@ export class FixedWizard {
                 const sheetArray = [
                     rowDate,
                     category,
-                    `Cobro fijo ${index + 1} de ${repetitions}`,
+                    `${description} ${index + 1} de ${repetitions}`,
                     account,
                     holder,
                     amount,
@@ -239,7 +259,7 @@ export class FixedWizard {
         }
     }
 
-    @WizardStep(8)
+    @WizardStep(9)
     @Hears(/no|No/i)
     async cancel(@Ctx() ctx: Scenes.WizardContext) {
         await ctx.reply(
@@ -302,6 +322,13 @@ ${group.categories.map((value, index) => `${index}. ${value}`).join('\n')}`);
         return this.wizardMessageService.buildRetryMessage(
             'La cantidad de repeticiones no es válida.',
             'Ingresá un número entre 1 y 12.',
+        );
+    }
+
+    private buildDescriptionErrorMessage(): string {
+        return this.wizardMessageService.buildRetryMessage(
+            'La descripción ingresada no es válida.',
+            'Ingresá una descripción no vacía.',
         );
     }
 
