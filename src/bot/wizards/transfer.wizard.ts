@@ -48,9 +48,13 @@ export class TransferWizard {
                 return;
             }
 
-            await ctx.reply(this.wizardMessageService.buildInvalidDateMessage());
+            await ctx.reply(
+                this.wizardMessageService.buildInvalidDateMessage(),
+            );
         } else {
-            await ctx.reply(this.wizardMessageService.buildInvalidDateMessage());
+            await ctx.reply(
+                this.wizardMessageService.buildInvalidDateMessage(),
+            );
         }
     }
 

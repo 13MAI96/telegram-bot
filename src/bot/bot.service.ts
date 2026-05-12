@@ -97,6 +97,7 @@ export class BotUpdate implements OnModuleInit, OnModuleDestroy {
         await ctx.reply(`
 Estos son los comandos disponibles:
 /gasto - Iniciar
+/suscripcion - Cobro fijo recurrente
 /help - Ayuda
 `);
     }
@@ -156,6 +157,7 @@ Estos son los comandos disponibles:
         }
     }
 
+    @Command('suscripcion')
     @Command('fijo')
     async fixedCost(@Ctx() ctx: Scenes.SceneContext) {
         if (ctx.message?.from.id) {
@@ -163,7 +165,7 @@ Estos son los comandos disponibles:
                 `${ctx.message?.from.id}`,
             );
             if (group) {
-                await ctx.scene.enter('fixed-cost', { group: group });
+                await ctx.scene.enter('fixed', { group: group });
             } else {
                 await ctx.scene.enter('new-group');
             }

@@ -64,7 +64,8 @@ ${balance}
             const message = parseInt(ctx.message['text']);
             const group: Group = ctx.wizard.state['group'];
             if (message && message > 0 && message < group.holders.length) {
-                const balance = await this.sheetService.getObservableData(group);
+                const balance =
+                    await this.sheetService.getObservableData(group);
                 const res = balance.holders.filter(
                     (x) => x.name == group.holders[message],
                 );
@@ -93,7 +94,8 @@ ${res}
             const message = parseInt(ctx.message['text']);
             const group: Group = ctx.wizard.state['group'];
             if (message && message > 0 && message < group.accounts.length) {
-                const balance = await this.sheetService.getObservableData(group);
+                const balance =
+                    await this.sheetService.getObservableData(group);
                 const res = balance.holders.map((x) => {
                     x.accounts = x.accounts.filter(
                         (y) => y.name == group.accounts[message],

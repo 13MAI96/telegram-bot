@@ -78,7 +78,10 @@ export class DateService {
             const requestedDay = Number(nextMonthShortcut[1]);
             if (requestedDay < 1) return null;
 
-            const nextMonth = this.clampToDayInNextMonth(baseDate, requestedDay);
+            const nextMonth = this.clampToDayInNextMonth(
+                baseDate,
+                requestedDay,
+            );
             return this.formatDateToDDMMYYYY(nextMonth);
         }
 
@@ -120,7 +123,8 @@ export class DateService {
     };
 
     public getMonthString = (date: string): string => {
-        const month: number = this.parseDateFromDDMMYYYY(date)?.getMonth() ?? -1;
+        const month: number =
+            this.parseDateFromDDMMYYYY(date)?.getMonth() ?? -1;
         if (month > -1 && month < 12) {
             return this.enum_months[month];
         }
