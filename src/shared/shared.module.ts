@@ -7,7 +7,19 @@ import { WizardMessageService } from './services/wizard-message.service';
 
 @Module({
     imports: [],
-    providers: [DateService, CsvService, ExcelService, NumberService],
-    exports: [DateService, CsvService, ExcelService, NumberService],
+    providers: [
+        DateService,
+        CsvService,
+        ExcelService,
+        NumberService,
+        WizardMessageService,
+    ],
+    exports: [
+        DateService,
+        CsvService,
+        ExcelService,
+        NumberService,
+        WizardMessageService,
+    ],
 })
 export class SharedModule {}
