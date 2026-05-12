@@ -2,7 +2,7 @@ import { Module } from '@nestjs/common';
 import { TelegrafModule } from 'nestjs-telegraf';
 import { BotUpdate } from './bot.service';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import {session } from 'telegraf'
+import { session } from 'telegraf';
 import { GroupService } from 'src/group/group.service';
 import { GroupModule } from 'src/group/group.module';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -19,35 +19,37 @@ import { CsvService } from 'src/shared/services/csv.service';
 import { ExcelService } from 'src/shared/services/excel.service';
 import { NumberService } from 'src/shared/services/number.service';
 
-
 @Module({
-  imports: [
-    ConfigModule,
-    MongooseModule.forFeature([{ name: Group.name, schema: GroupSchema}, { name: OneTimeToken.name, schema: OneTimeTokenSchema }]),
-    TelegrafModule.forRootAsync({
-      imports: [ConfigModule],
-      inject: [ConfigService],
-      useFactory: async (configService: ConfigService) => ({
-        token: configService.get<string>('BOT_TOKEN') ?? '',
-        middlewares: [session()],
-        launchOptions: false,
-      }),
-    }),
-    GroupModule,
-    SheetsModule, 
-    TokenModule,
-    SharedModule
-  ],
-  providers: [
-    ...Wizards,
-    BotUpdate, 
-    GroupService,
-    SheetsService,
-    TokenService,
-    DateService,
-    CsvService,
-    ExcelService,
-    NumberService,
-  ],
+    imports: [
+        ConfigModule,
+        MongooseModule.forFeature([
+            { name: Group.name, schema: GroupSchema },
+            { name: OneTimeToken.name, schema: OneTimeTokenSchema },
+        ]),
+        TelegrafModule.forRootAsync({
+            imports: [ConfigModule],
+            inject: [ConfigService],
+            useFactory: async (configService: ConfigService) => ({
+                token: configService.get<string>('BOT_TOKEN') ?? '',
+                middlewares: [session()],
+                launchOptions: false,
+            }),
+        }),
+        GroupModule,
+        SheetsModule,
+        TokenModule,
+        SharedModule,
+    ],
+    providers: [
+        ...Wizards,
+        BotUpdate,
+        GroupService,
+        SheetsService,
+        TokenService,
+        DateService,
+        NumberService,
+        CsvService,
+        ExcelService,
+    ],
 })
 export class BotModule {}

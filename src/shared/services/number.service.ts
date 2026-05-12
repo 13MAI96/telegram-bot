@@ -1,17 +1,17 @@
-import { Injectable } from '@nestjs/common'
+import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class NumberService {
     public toNumber = (x: any) => {
-        let str = this.normalizeNumberString(x)
+        const str = this.normalizeNumberString(x);
 
-        let number = parseFloat(str)
-        if(isNaN(number)){
-            number = 0
+        let number = parseFloat(str);
+        if (isNaN(number)) {
+            number = 0;
         }
-    
-        return Math.round(number*100)/100
-    }
+
+        return Math.round(number * 100) / 100;
+    };
 
     private normalizeNumberString(value: string): string {
         if (!value) return value;
@@ -31,6 +31,5 @@ export class NumberService {
 
         // Caso 3: solo punto → 1234.56 (ya correcto)
         return value;
-}
-
+    }
 }

@@ -3,20 +3,11 @@ import { DateService } from './services/date.service';
 import { CsvService } from './services/csv.service';
 import { ExcelService } from './services/excel.service';
 import { NumberService } from './services/number.service';
+import { WizardMessageService } from './services/wizard-message.service';
 
 @Module({
-  imports: [],
-  providers: [
-    DateService,
-    CsvService,
-    ExcelService, 
-    NumberService,
-  ],
-  exports: [
-    DateService,
-    CsvService,
-    ExcelService,
-    NumberService
-  ]
+    imports: [],
+    providers: [DateService, CsvService, ExcelService, NumberService],
+    exports: [DateService, CsvService, ExcelService, NumberService],
 })
 export class SharedModule {}
