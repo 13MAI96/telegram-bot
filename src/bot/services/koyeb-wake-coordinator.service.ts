@@ -40,8 +40,10 @@ export class KoyebWakeCoordinatorService
 
     recordTelegramActivity(userId: string | number, at = Date.now()) {
         this.recentTelegramUsers.set(String(userId), at);
-        console.log(this.recentTelegramUsers);
         this.pruneTelegramUsers(at);
+        this.logger.debug(
+            `Recorded Telegram activity for user=${userId}; trackedUsers=${this.recentTelegramUsers.size}`,
+        );
     }
 
     recordHttpActivity(at = Date.now()) {
@@ -62,7 +64,6 @@ export class KoyebWakeCoordinatorService
     private scheduleWarning(at: number, cycleToken: number) {
         const remaining = Math.max(WARNING_DELAY_MS, 0);
         this.warningTimer = setTimeout(() => {
-            console.log('Schedule warning');
             void this.sendWarningForCycle(cycleToken);
         }, remaining);
 
@@ -82,7 +83,6 @@ export class KoyebWakeCoordinatorService
     }
 
     private async sendWarningForCycle(cycleToken: number) {
-        console.log(cycleToken, this.currentCycleToken);
         if (cycleToken !== this.currentCycleToken) {
             return false;
         }
@@ -98,7 +98,9 @@ export class KoyebWakeCoordinatorService
 
         const activeUsers = this.getRecentlyActiveUsers();
         const warningMessage = this.buildWarningMessage(wakeLink);
-        console.log(activeUsers, warningMessage, wakeLink);
+        this.logger.debug(
+            `Sending Koyeb wake warning for cycle=${cycleToken} to ${activeUsers.length} tracked users`,
+        );
         for (const userId of activeUsers) {
             const numericUserId = Number(userId);
             if (!Number.isFinite(numericUserId)) {

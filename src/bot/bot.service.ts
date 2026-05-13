@@ -31,8 +31,13 @@ export class BotUpdate implements OnModuleInit, OnModuleDestroy {
      */
 
     async onModuleInit() {
+        const initStartedAt = Date.now();
+
         this.bot.use(async (ctx, next) => {
             if (ctx.from?.id) {
+                this.logger.debug(
+                    `Telegram update received from user=${ctx.from.id}`,
+                );
                 this.koyebWakeCoordinatorService.recordTelegramActivity(
                     `${ctx.from.id}`,
                 );
@@ -40,6 +45,7 @@ export class BotUpdate implements OnModuleInit, OnModuleDestroy {
 
             return next();
         });
+        this.logger.log('Registered Telegram activity middleware');
 
         this.bot.catch(async (err, ctx) => {
             const wizardContext = ctx as Scenes.SceneContext;
@@ -68,8 +74,17 @@ export class BotUpdate implements OnModuleInit, OnModuleDestroy {
             }
         });
 
+        const deleteWebhookStartedAt = Date.now();
+        this.logger.log('Deleting Telegram webhook before bot launch');
         await this.bot.telegram.deleteWebhook({ drop_pending_updates: true });
+        this.logger.log(
+            `Telegram webhook deleted in ${Date.now() - deleteWebhookStartedAt}ms`,
+        );
+
         await this.startWithRetry();
+        this.logger.log(
+            `Bot module init completed in ${Date.now() - initStartedAt}ms`,
+        );
     }
 
     async onModuleDestroy() {
@@ -77,14 +92,27 @@ export class BotUpdate implements OnModuleInit, OnModuleDestroy {
     }
 
     private async startWithRetry(delay = 30000) {
+        const launchStartedAt = Date.now();
+
         try {
-            await this.bot.launch().then((x) => console.log(x));
+            this.logger.log('Launching Telegram bot');
+            await this.bot.launch();
+            this.logger.log(
+                `Telegram bot launch completed in ${Date.now() - launchStartedAt}ms`,
+            );
         } catch (err) {
             if (err.code === 409) {
-                console.warn(`Retrying bot start in ${delay / 1000}s`);
+                this.logger.warn(
+                    `Telegram bot launch returned 409 after ${Date.now() - launchStartedAt}ms; retrying in ${delay / 1000}s`,
+                );
                 setTimeout(() => this.startWithRetry(delay), delay);
                 return;
             }
+
+            this.logger.error(
+                `Telegram bot launch failed after ${Date.now() - launchStartedAt}ms`,
+                err instanceof Error ? err.stack : String(err),
+            );
             throw err;
         }
     }
