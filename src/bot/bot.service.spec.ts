@@ -112,35 +112,37 @@ describe('BotUpdate fixed command', () => {
         expect(ctx.scene.enter).not.toHaveBeenCalled();
     });
 
-    it('registers Telegram activity middleware without interrupting flow', async () => {
+    it('records Telegram activity for messages', async () => {
         const groupService = {
             hasAssignedGroup: jest.fn(),
         };
         const coordinator = createCoordinator();
-        let registeredMiddleware: any;
-        const bot = {
-            telegram: {
-                deleteWebhook: jest.fn().mockResolvedValue(undefined),
-            },
-            catch: jest.fn(),
-            launch: jest.fn().mockResolvedValue(undefined),
-            stop: jest.fn().mockResolvedValue(undefined),
-            use: jest.fn((middleware) => {
-                registeredMiddleware = middleware;
-            }),
-        } as any;
+        const bot = createBot();
         const update = new BotUpdate(
             groupService as any,
             coordinator as any,
             bot,
         );
 
-        await update.onModuleInit();
-        await registeredMiddleware(
-            { from: { id: 123 } },
-            jest.fn().mockResolvedValue(undefined),
-        );
+        await update.trackMessageActivity({ from: { id: 123 } } as any);
 
         expect(coordinator.recordTelegramActivity).toHaveBeenCalledWith('123');
+    });
+
+    it('records Telegram activity for callback queries', async () => {
+        const groupService = {
+            hasAssignedGroup: jest.fn(),
+        };
+        const coordinator = createCoordinator();
+        const bot = createBot();
+        const update = new BotUpdate(
+            groupService as any,
+            coordinator as any,
+            bot,
+        );
+
+        await update.trackCallbackActivity({ from: { id: 456 } } as any);
+
+        expect(coordinator.recordTelegramActivity).toHaveBeenCalledWith('456');
     });
 });

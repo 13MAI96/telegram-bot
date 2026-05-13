@@ -32,20 +32,7 @@ export class BotUpdate implements OnModuleInit, OnModuleDestroy {
 
     async onModuleInit() {
         const initStartedAt = Date.now();
-
-        this.bot.use(async (ctx, next) => {
-            if (ctx.from?.id) {
-                this.logger.debug(
-                    `Telegram update received from user=${ctx.from.id}`,
-                );
-                this.koyebWakeCoordinatorService.recordTelegramActivity(
-                    `${ctx.from.id}`,
-                );
-            }
-
-            return next();
-        });
-        this.logger.log('Registered Telegram activity middleware');
+        this.logger.log('Telegram activity tracking is enabled');
 
         this.bot.catch(async (err, ctx) => {
             const wizardContext = ctx as Scenes.SceneContext;
@@ -140,6 +127,16 @@ Estos son los comandos disponibles:
 /suscripcion - Cobro fijo recurrente
 /help - Ayuda
 `);
+    }
+
+    @On('message')
+    async trackMessageActivity(@Ctx() ctx: Context) {
+        this.recordTelegramActivity(ctx);
+    }
+
+    @On('callback_query')
+    async trackCallbackActivity(@Ctx() ctx: Context) {
+        this.recordTelegramActivity(ctx);
     }
 
     @Hears('Hola')
@@ -270,5 +267,16 @@ Estos son los comandos disponibles:
                 await ctx.scene.enter('new-group');
             }
         }
+    }
+
+    private recordTelegramActivity(ctx: Context) {
+        if (!ctx.from?.id) {
+            return;
+        }
+
+        this.logger.debug(`Telegram update received from user=${ctx.from.id}`);
+        this.koyebWakeCoordinatorService.recordTelegramActivity(
+            `${ctx.from.id}`,
+        );
     }
 }
