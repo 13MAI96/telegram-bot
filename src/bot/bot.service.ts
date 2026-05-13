@@ -11,6 +11,7 @@ import {
 } from 'nestjs-telegraf';
 import { GroupService } from 'src/group/group.service';
 import { Context, Scenes, Telegraf } from 'telegraf';
+import { KoyebWakeCoordinatorService } from './services/koyeb-wake-coordinator.service';
 
 @Update()
 export class BotUpdate implements OnModuleInit, OnModuleDestroy {
@@ -18,6 +19,7 @@ export class BotUpdate implements OnModuleInit, OnModuleDestroy {
 
     constructor(
         private groupService: GroupService,
+        private koyebWakeCoordinatorService: KoyebWakeCoordinatorService,
         @InjectBot() private readonly bot: Telegraf,
     ) {}
 
@@ -29,6 +31,16 @@ export class BotUpdate implements OnModuleInit, OnModuleDestroy {
      */
 
     async onModuleInit() {
+        this.bot.use(async (ctx, next) => {
+            if (ctx.from?.id) {
+                this.koyebWakeCoordinatorService.recordTelegramActivity(
+                    `${ctx.from.id}`,
+                );
+            }
+
+            return next();
+        });
+
         this.bot.catch(async (err, ctx) => {
             const wizardContext = ctx as Scenes.SceneContext;
             const sceneId = wizardContext.scene?.current?.id ?? 'none';
@@ -208,14 +220,23 @@ Estos son los comandos disponibles:
 
     @On('text')
     async planeTextManager(@Ctx() ctx: Scenes.SceneContext) {
+        if (ctx.scene?.current) {
+            return;
+        }
+
         if (ctx.message?.from.id) {
+            const text = ctx.message['text']?.trim();
+            if (!text || text.startsWith('/')) {
+                return;
+            }
+
             const group = await this.groupService.hasAssignedGroup(
                 `${ctx.message.from.id}`,
             );
             if (group) {
                 await ctx.scene.enter('plane-text', {
                     group: group,
-                    text: ctx.message['text'],
+                    text,
                 });
             } else {
                 await ctx.scene.enter('new-group');

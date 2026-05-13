@@ -321,7 +321,7 @@ describe('FixedWizard', () => {
             },
         });
 
-        await wizard.confirm(ctx as any);
+        await wizard.confirm(ctx);
 
         expect(ctx.reply).toHaveBeenCalledWith(
             expect.stringContaining('No pude completar el registro.'),

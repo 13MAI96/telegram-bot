@@ -18,6 +18,7 @@ import { DateService } from 'src/shared/services/date.service';
 import { CsvService } from 'src/shared/services/csv.service';
 import { ExcelService } from 'src/shared/services/excel.service';
 import { NumberService } from 'src/shared/services/number.service';
+import { KoyebWakeCoordinatorService } from './services/koyeb-wake-coordinator.service';
 
 @Module({
     imports: [
@@ -43,6 +44,7 @@ import { NumberService } from 'src/shared/services/number.service';
     providers: [
         ...Wizards,
         BotUpdate,
+        KoyebWakeCoordinatorService,
         GroupService,
         SheetsService,
         TokenService,
@@ -51,5 +53,6 @@ import { NumberService } from 'src/shared/services/number.service';
         CsvService,
         ExcelService,
     ],
+    exports: [KoyebWakeCoordinatorService],
 })
 export class BotModule {}
