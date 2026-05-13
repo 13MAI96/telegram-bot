@@ -32,6 +32,6 @@ async function bootstrap() {
         process.exit(0);
     });
 
-    await app.listen(port, '0.0.0.0');
+    await app.listen(port);
 }
 void bootstrap();
