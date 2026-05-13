@@ -6,13 +6,11 @@ import {
     Hears,
     Ctx,
     Command,
-    On,
     InjectBot,
-    Next,
+    On,
 } from 'nestjs-telegraf';
 import { GroupService } from 'src/group/group.service';
 import { Context, Scenes, Telegraf } from 'telegraf';
-import { KoyebWakeCoordinatorService } from './services/koyeb-wake-coordinator.service';
 
 @Update()
 export class BotUpdate implements OnModuleInit, OnModuleDestroy {
@@ -20,7 +18,6 @@ export class BotUpdate implements OnModuleInit, OnModuleDestroy {
 
     constructor(
         private groupService: GroupService,
-        private koyebWakeCoordinatorService: KoyebWakeCoordinatorService,
         @InjectBot() private readonly bot: Telegraf,
     ) {}
 
@@ -128,24 +125,6 @@ Estos son los comandos disponibles:
 /suscripcion - Cobro fijo recurrente
 /help - Ayuda
 `);
-    }
-
-    @On('message')
-    async trackMessageActivity(
-        @Ctx() ctx: Context,
-        @Next() next: () => Promise<void>,
-    ) {
-        this.recordTelegramActivity(ctx);
-        return next();
-    }
-
-    @On('callback_query')
-    async trackCallbackActivity(
-        @Ctx() ctx: Context,
-        @Next() next: () => Promise<void>,
-    ) {
-        this.recordTelegramActivity(ctx);
-        return next();
     }
 
     @Hears('Hola')
@@ -276,15 +255,5 @@ Estos son los comandos disponibles:
                 await ctx.scene.enter('new-group');
             }
         }
-    }
-
-    private recordTelegramActivity(ctx: Context) {
-        if (!ctx.from?.id) {
-            return;
-        }
-
-        this.koyebWakeCoordinatorService.recordTelegramActivity(
-            `${ctx.from.id}`,
-        );
     }
 }

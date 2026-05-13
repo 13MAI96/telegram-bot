@@ -1,4 +1,5 @@
 import { ConfigService } from '@nestjs/config';
+import { KoyebWakeActivityService } from './koyeb-wake-activity.service';
 import { KoyebWakeCoordinatorService } from './koyeb-wake-coordinator.service';
 
 function createService(overrides: Record<string, unknown> = {}) {
@@ -10,9 +11,11 @@ function createService(overrides: Record<string, unknown> = {}) {
             sendMessage: jest.fn().mockResolvedValue(undefined),
         },
     };
+    const activityService = new KoyebWakeActivityService();
 
     return new KoyebWakeCoordinatorService(
         { ...configService, ...overrides } as ConfigService,
+        activityService,
         bot as any,
     );
 }
@@ -30,10 +33,13 @@ describe('KoyebWakeCoordinatorService', () => {
 
     it('warns only recently active users with a Spanish first-person message', async () => {
         const service = createService();
+        const activityService = (service as unknown as {
+            koyebWakeActivityService: KoyebWakeActivityService;
+        }).koyebWakeActivityService;
         jest.setSystemTime(new Date('2026-05-13T10:59:00.000Z'));
-        service.recordTelegramActivity(456);
+        activityService.recordTelegramActivity(456);
         jest.setSystemTime(new Date('2026-05-13T12:00:00.000Z'));
-        service.recordTelegramActivity(123);
+        activityService.recordTelegramActivity(123);
 
         await service.onModuleInit();
         await jest.advanceTimersByTimeAsync(59 * 60 * 1000);
@@ -55,7 +61,11 @@ describe('KoyebWakeCoordinatorService', () => {
 
     it('does not send duplicate warnings within the same cycle', async () => {
         const service = createService();
-        service.recordTelegramActivity(123);
+        (
+            service as unknown as {
+                koyebWakeActivityService: KoyebWakeActivityService;
+            }
+        ).koyebWakeActivityService.recordTelegramActivity(123);
 
         await service.onModuleInit();
         await jest.advanceTimersByTimeAsync(59 * 60 * 1000);
@@ -73,13 +83,21 @@ describe('KoyebWakeCoordinatorService', () => {
 
     it('resets the warning cycle on inbound HTTP activity', async () => {
         const service = createService();
-        service.recordTelegramActivity(123);
+        (
+            service as unknown as {
+                koyebWakeActivityService: KoyebWakeActivityService;
+            }
+        ).koyebWakeActivityService.recordTelegramActivity(123);
 
         await service.onModuleInit();
         await jest.advanceTimersByTimeAsync(30 * 60 * 1000);
         service.recordHttpActivity();
-        service.recordTelegramActivity(123);
-        await jest.advanceTimersByTimeAsync(58 * 60 * 1000);
+        (
+            service as unknown as {
+                koyebWakeActivityService: KoyebWakeActivityService;
+            }
+        ).koyebWakeActivityService.recordTelegramActivity(123);
+        await jest.advanceTimersByTimeAsync(57 * 60 * 1000);
 
         const sendMessage = (
             service as unknown as {
@@ -107,11 +125,20 @@ describe('KoyebWakeCoordinatorService', () => {
         };
         const service = new KoyebWakeCoordinatorService(
             configService as any,
+            new KoyebWakeActivityService(),
             bot as any,
         );
 
-        service.recordTelegramActivity(123);
-        service.recordTelegramActivity(456);
+        (
+            service as unknown as {
+                koyebWakeActivityService: KoyebWakeActivityService;
+            }
+        ).koyebWakeActivityService.recordTelegramActivity(123);
+        (
+            service as unknown as {
+                koyebWakeActivityService: KoyebWakeActivityService;
+            }
+        ).koyebWakeActivityService.recordTelegramActivity(456);
 
         await service.onModuleInit();
         await jest.advanceTimersByTimeAsync(59 * 60 * 1000);

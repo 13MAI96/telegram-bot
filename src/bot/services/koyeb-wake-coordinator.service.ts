@@ -7,8 +7,8 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { InjectBot } from 'nestjs-telegraf';
 import { Telegraf } from 'telegraf';
+import { KoyebWakeActivityService } from './koyeb-wake-activity.service';
 
-const ACTIVE_WINDOW_MS = 60 * 60 * 1000;
 const WARNING_DELAY_MS = 58 * 60 * 1000;
 
 @Injectable()
@@ -16,7 +16,6 @@ export class KoyebWakeCoordinatorService
     implements OnModuleInit, OnModuleDestroy
 {
     private readonly logger = new Logger(KoyebWakeCoordinatorService.name);
-    private readonly recentTelegramUsers = new Map<string, number>();
     private readonly warningCopy =
         'Me estoy por ir a dormir, si necesitás algo más no te olvides de despertarme en ';
 
@@ -26,6 +25,7 @@ export class KoyebWakeCoordinatorService
 
     constructor(
         private readonly configService: ConfigService,
+        private readonly koyebWakeActivityService: KoyebWakeActivityService,
         @InjectBot() private readonly bot: Telegraf,
     ) {}
 
@@ -36,11 +36,6 @@ export class KoyebWakeCoordinatorService
     async onModuleDestroy() {
         await this.flushPendingWarning();
         this.clearWarningTimer();
-    }
-
-    recordTelegramActivity(userId: string | number, at = Date.now()) {
-        this.recentTelegramUsers.set(String(userId), at);
-        this.pruneTelegramUsers(at);
     }
 
     recordHttpActivity(at = Date.now()) {
@@ -93,7 +88,8 @@ export class KoyebWakeCoordinatorService
             return false;
         }
 
-        const activeUsers = this.getRecentlyActiveUsers();
+        const activeUsers =
+            this.koyebWakeActivityService.getRecentlyActiveUsers();
         const warningMessage = this.buildWarningMessage(wakeLink);
         for (const userId of activeUsers) {
             const numericUserId = Number(userId);
@@ -145,19 +141,6 @@ export class KoyebWakeCoordinatorService
 
     private buildWarningMessage(wakeLink: string): string {
         return `${this.warningCopy}${wakeLink}`;
-    }
-
-    private getRecentlyActiveUsers(at = Date.now()): string[] {
-        this.pruneTelegramUsers(at);
-        return [...this.recentTelegramUsers.keys()];
-    }
-
-    private pruneTelegramUsers(at = Date.now()) {
-        for (const [userId, lastActivityAt] of this.recentTelegramUsers) {
-            if (at - lastActivityAt > ACTIVE_WINDOW_MS) {
-                this.recentTelegramUsers.delete(userId);
-            }
-        }
     }
 
     private clearWarningTimer() {

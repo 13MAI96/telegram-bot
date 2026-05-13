@@ -18,6 +18,8 @@ import { DateService } from 'src/shared/services/date.service';
 import { CsvService } from 'src/shared/services/csv.service';
 import { ExcelService } from 'src/shared/services/excel.service';
 import { NumberService } from 'src/shared/services/number.service';
+import { KoyebWakeActivityModule } from './services/koyeb-wake-activity.module';
+import { KoyebWakeActivityService } from './services/koyeb-wake-activity.service';
 import { KoyebWakeCoordinatorService } from './services/koyeb-wake-coordinator.service';
 
 @Module({
@@ -27,12 +29,27 @@ import { KoyebWakeCoordinatorService } from './services/koyeb-wake-coordinator.s
             { name: Group.name, schema: GroupSchema },
             { name: OneTimeToken.name, schema: OneTimeTokenSchema },
         ]),
+        KoyebWakeActivityModule,
         TelegrafModule.forRootAsync({
-            imports: [ConfigModule],
-            inject: [ConfigService],
-            useFactory: async (configService: ConfigService) => ({
+            imports: [ConfigModule, KoyebWakeActivityModule],
+            inject: [ConfigService, KoyebWakeActivityService],
+            useFactory: async (
+                configService: ConfigService,
+                koyebWakeActivityService: KoyebWakeActivityService,
+            ) => ({
                 token: configService.get<string>('BOT_TOKEN') ?? '',
-                middlewares: [session()],
+                middlewares: [
+                    session(),
+                    async (ctx, next) => {
+                        if (ctx.from?.id) {
+                            koyebWakeActivityService.recordTelegramActivity(
+                                `${ctx.from.id}`,
+                            );
+                        }
+
+                        return next();
+                    },
+                ],
                 launchOptions: false,
             }),
         }),

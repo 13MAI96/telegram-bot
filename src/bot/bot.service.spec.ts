@@ -12,23 +12,13 @@ function createBot() {
     } as any;
 }
 
-function createCoordinator() {
-    return {
-        recordTelegramActivity: jest.fn(),
-    };
-}
-
 describe('BotUpdate fixed command', () => {
     it('enters fixed when a group is assigned', async () => {
         const groupService = {
             hasAssignedGroup: jest.fn().mockResolvedValue({ _id: 'group-1' }),
         };
         const bot = createBot();
-        const update = new BotUpdate(
-            groupService as any,
-            createCoordinator() as any,
-            bot,
-        );
+        const update = new BotUpdate(groupService as any, bot);
         const ctx = {
             message: { from: { id: 123 } },
             scene: {
@@ -48,11 +38,7 @@ describe('BotUpdate fixed command', () => {
             hasAssignedGroup: jest.fn().mockResolvedValue(null),
         };
         const bot = createBot();
-        const update = new BotUpdate(
-            groupService as any,
-            createCoordinator() as any,
-            bot,
-        );
+        const update = new BotUpdate(groupService as any, bot);
         const ctx = {
             message: { from: { id: 123 } },
             scene: {
@@ -70,11 +56,7 @@ describe('BotUpdate fixed command', () => {
             hasAssignedGroup: jest.fn(),
         };
         const bot = createBot();
-        const update = new BotUpdate(
-            groupService as any,
-            createCoordinator() as any,
-            bot,
-        );
+        const update = new BotUpdate(groupService as any, bot);
         const ctx = {
             message: { from: { id: 123 }, text: '0' },
             scene: {
@@ -94,11 +76,7 @@ describe('BotUpdate fixed command', () => {
             hasAssignedGroup: jest.fn(),
         };
         const bot = createBot();
-        const update = new BotUpdate(
-            groupService as any,
-            createCoordinator() as any,
-            bot,
-        );
+        const update = new BotUpdate(groupService as any, bot);
         const ctx = {
             message: { from: { id: 123 }, text: '/help' },
             scene: {
@@ -110,48 +88,5 @@ describe('BotUpdate fixed command', () => {
 
         expect(groupService.hasAssignedGroup).not.toHaveBeenCalled();
         expect(ctx.scene.enter).not.toHaveBeenCalled();
-    });
-
-    it('records Telegram activity for messages', async () => {
-        const groupService = {
-            hasAssignedGroup: jest.fn(),
-        };
-        const coordinator = createCoordinator();
-        const bot = createBot();
-        const update = new BotUpdate(
-            groupService as any,
-            coordinator as any,
-            bot,
-        );
-
-        const next = jest.fn().mockResolvedValue(undefined);
-
-        await update.trackMessageActivity({ from: { id: 123 } } as any, next);
-
-        expect(coordinator.recordTelegramActivity).toHaveBeenCalledWith('123');
-        expect(next).toHaveBeenCalled();
-    });
-
-    it('records Telegram activity for callback queries', async () => {
-        const groupService = {
-            hasAssignedGroup: jest.fn(),
-        };
-        const coordinator = createCoordinator();
-        const bot = createBot();
-        const update = new BotUpdate(
-            groupService as any,
-            coordinator as any,
-            bot,
-        );
-
-        const next = jest.fn().mockResolvedValue(undefined);
-
-        await update.trackCallbackActivity(
-            { from: { id: 456 } } as any,
-            next,
-        );
-
-        expect(coordinator.recordTelegramActivity).toHaveBeenCalledWith('456');
-        expect(next).toHaveBeenCalled();
     });
 });
