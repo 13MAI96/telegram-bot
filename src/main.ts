@@ -11,19 +11,23 @@ async function bootstrap() {
         .select(BotModule)
         .get(KoyebWakeCoordinatorService, { strict: false });
 
-    app.use((_req: Request, _res: Response, next: NextFunction) => {
-        koyebWakeCoordinatorService.recordHttpActivity();
+    app.use((req: Request, _res: Response, next: NextFunction) => {
+        if (req.path === '/wake') {
+            koyebWakeCoordinatorService.recordHttpActivity();
+        }
         next();
     });
 
     process.once('SIGINT', async () => {
         await koyebWakeCoordinatorService.flushPendingWarning();
+        console.log('SIGINT');
         await app.close();
         process.exit(0);
     });
 
     process.once('SIGTERM', async () => {
         await koyebWakeCoordinatorService.flushPendingWarning();
+        console.log('SIGTERM');
         await app.close();
         process.exit(0);
     });

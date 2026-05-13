@@ -6,7 +6,7 @@ The system SHALL warn Telegram users who were active during the last 60 minutes 
 #### Scenario: Warn recently active users before sleep
 - **WHEN** the service is approaching the end of a 60-minute inbound HTTP inactivity window
 - **THEN** the system MUST send a warning message to each Telegram user recorded as active during the last 60 minutes
-- **THEN** the warning message MUST include a wake-up link pointing to the configured public root path `/`
+- **THEN** the warning message MUST include a wake-up link pointing to the configured public path `/wake`
 - **THEN** the warning message MUST be written in Spanish and first person, using copy equivalent to `Me estoy por ir a dormir, si necesitás algo más no te olvides de despertarme en {link}`
 
 #### Scenario: Do not warn inactive users
@@ -18,10 +18,10 @@ The system SHALL avoid sending duplicate pre-sleep warnings for the same inactiv
 
 #### Scenario: Only one warning is sent before sleep
 - **WHEN** the warning for the current idle cycle has already been sent
-- **THEN** the system MUST NOT send another warning until new inbound HTTP activity starts a new cycle
+- **THEN** the system MUST NOT send another warning until a new `/wake` request starts a new cycle
 
 #### Scenario: New traffic starts a new idle cycle
-- **WHEN** the service receives new inbound HTTP traffic after a warning was already sent
+- **WHEN** the service receives a new `/wake` request after a warning was already sent
 - **THEN** the system MUST reset the warning state for the next idle cycle
 
 ### Requirement: Warning logic is based on inbound HTTP activity
@@ -31,13 +31,13 @@ The system SHALL use inbound HTTP activity, not Telegram polling activity alone,
 - **WHEN** users continue interacting with the bot only through Telegram polling and no inbound HTTP traffic reaches the service
 - **THEN** the system MUST continue counting down the current idle cycle based on inbound HTTP activity timestamps
 
-#### Scenario: Any inbound HTTP request refreshes service activity
-- **WHEN** the service receives an inbound HTTP request
+#### Scenario: Wake endpoint refreshes service activity
+- **WHEN** the service receives an inbound HTTP request on `/wake`
 - **THEN** the system MUST record a fresh service activity timestamp for idle-cycle tracking
 
-#### Scenario: Health checks count as legitimate cycle activity
-- **WHEN** the service receives an inbound HTTP health-check request
-- **THEN** the system MUST treat that request as valid inbound HTTP activity for the current idle cycle
+#### Scenario: Other inbound requests do not refresh the cycle
+- **WHEN** the service receives an inbound HTTP request on a path other than `/wake`
+- **THEN** the system MUST NOT reset the current idle-cycle activity timestamp
 
 ### Requirement: Notification failures do not interrupt normal operation
 The system SHALL treat failed warning deliveries as non-fatal.
