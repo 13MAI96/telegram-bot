@@ -16,6 +16,7 @@ import Wizards from './wizards';
 import { SharedModule } from 'src/shared/shared.module';
 import { DateService } from 'src/shared/services/date.service';
 import { NumberService } from 'src/shared/services/number.service';
+import { KoyebWakeCoordinatorService } from './services/koyeb-wake-coordinator.service';
 
 @Module({
     imports: [
@@ -41,11 +42,13 @@ import { NumberService } from 'src/shared/services/number.service';
     providers: [
         ...Wizards,
         BotUpdate,
+        KoyebWakeCoordinatorService,
         GroupService,
         SheetsService,
         TokenService,
         DateService,
         NumberService,
     ],
+    exports: [KoyebWakeCoordinatorService],
 })
 export class BotModule {}
