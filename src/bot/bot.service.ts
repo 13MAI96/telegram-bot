@@ -199,10 +199,10 @@ Estos son los comandos disponibles:
     }
 
     @Hears(/mayores/i)
-    async maestros(@Ctx() ctx: Scenes.SceneContext){
-        await ctx.scene.enter('espe')
+    async maestros(@Ctx() ctx: Scenes.SceneContext) {
+        await ctx.scene.enter('espe');
     }
-  
+
     @Command('saldos')
     @Command('balance')
     async balance(@Ctx() ctx: Scenes.SceneContext) {
