@@ -9,7 +9,7 @@ import { InjectBot } from 'nestjs-telegraf';
 import { Telegraf } from 'telegraf';
 
 const ACTIVE_WINDOW_MS = 60 * 60 * 1000;
-const WARNING_DELAY_MS = 5 * 60 * 1000;
+const WARNING_DELAY_MS = 58 * 60 * 1000;
 
 @Injectable()
 export class KoyebWakeCoordinatorService
@@ -41,9 +41,6 @@ export class KoyebWakeCoordinatorService
     recordTelegramActivity(userId: string | number, at = Date.now()) {
         this.recentTelegramUsers.set(String(userId), at);
         this.pruneTelegramUsers(at);
-        this.logger.debug(
-            `Recorded Telegram activity for user=${userId}; trackedUsers=${this.recentTelegramUsers.size}`,
-        );
     }
 
     recordHttpActivity(at = Date.now()) {
@@ -98,9 +95,6 @@ export class KoyebWakeCoordinatorService
 
         const activeUsers = this.getRecentlyActiveUsers();
         const warningMessage = this.buildWarningMessage(wakeLink);
-        this.logger.debug(
-            `Sending Koyeb wake warning for cycle=${cycleToken} to ${activeUsers.length} tracked users`,
-        );
         for (const userId of activeUsers) {
             const numericUserId = Number(userId);
             if (!Number.isFinite(numericUserId)) {

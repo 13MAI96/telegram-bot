@@ -274,7 +274,6 @@ Estos son los comandos disponibles:
             return;
         }
 
-        this.logger.debug(`Telegram update received from user=${ctx.from.id}`);
         this.koyebWakeCoordinatorService.recordTelegramActivity(
             `${ctx.from.id}`,
         );
