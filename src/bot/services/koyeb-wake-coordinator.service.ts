@@ -9,7 +9,7 @@ import { InjectBot } from 'nestjs-telegraf';
 import { Telegraf } from 'telegraf';
 
 const ACTIVE_WINDOW_MS = 60 * 60 * 1000;
-const WARNING_DELAY_MS = 59 * 60 * 1000;
+const WARNING_DELAY_MS = 5 * 60 * 1000;
 
 @Injectable()
 export class KoyebWakeCoordinatorService
@@ -61,6 +61,7 @@ export class KoyebWakeCoordinatorService
     private scheduleWarning(at: number, cycleToken: number) {
         const remaining = Math.max(WARNING_DELAY_MS, 0);
         this.warningTimer = setTimeout(() => {
+            console.log('Schedule warning');
             void this.sendWarningForCycle(cycleToken);
         }, remaining);
 
@@ -80,6 +81,7 @@ export class KoyebWakeCoordinatorService
     }
 
     private async sendWarningForCycle(cycleToken: number) {
+        console.log(cycleToken, this.currentCycleToken);
         if (cycleToken !== this.currentCycleToken) {
             return false;
         }
@@ -95,7 +97,7 @@ export class KoyebWakeCoordinatorService
 
         const activeUsers = this.getRecentlyActiveUsers();
         const warningMessage = this.buildWarningMessage(wakeLink);
-
+        console.log(activeUsers, warningMessage, wakeLink);
         for (const userId of activeUsers) {
             const numericUserId = Number(userId);
             if (!Number.isFinite(numericUserId)) {
