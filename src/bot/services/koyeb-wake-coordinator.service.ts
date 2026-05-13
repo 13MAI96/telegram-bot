@@ -135,7 +135,7 @@ export class KoyebWakeCoordinatorService
         }
 
         try {
-            return new URL('/', publicBaseUrl).toString();
+            return new URL('/wake', publicBaseUrl).toString();
         } catch (error) {
             this.logger.warn(
                 `PUBLIC_BASE_URL is invalid: ${error instanceof Error ? error.message : String(error)}`,

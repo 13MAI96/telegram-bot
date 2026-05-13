@@ -48,7 +48,7 @@ describe('KoyebWakeCoordinatorService', () => {
         expect(sendMessage).toHaveBeenCalledWith(
             123,
             expect.stringContaining(
-                'Me estoy por ir a dormir, si necesitás algo más no te olvides de despertarme en https://example.com/',
+                'Me estoy por ir a dormir, si necesitás algo más no te olvides de despertarme en https://example.com/wake',
             ),
         );
     });

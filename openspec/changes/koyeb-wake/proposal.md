@@ -6,7 +6,7 @@ The bot runs on a Koyeb free instance that automatically sleeps after one hour w
 
 - Track which Telegram users were active during the current recent-activity window without introducing a new database dependency.
 - Add an in-memory sleep-warning coordinator that tracks the latest inbound HTTP activity seen by the service and schedules a single pre-sleep notification before the Koyeb idle timeout is reached.
-- Send a warning message only to recently active users, including a public wake-up link pointing to the deployed service root path `/`.
+- Send a warning message only to recently active users, including a public wake-up link pointing to the deployed service path `/wake`.
 - Ensure notification delivery failures are logged and do not block the bot's normal operation or other notifications.
 - Add a best-effort shutdown notification path that can attempt a final warning on graceful termination, without making the feature depend on exact shutdown timing.
 - Preserve the current polling-based Telegram architecture and existing MongoDB/Google Sheets boundaries.
