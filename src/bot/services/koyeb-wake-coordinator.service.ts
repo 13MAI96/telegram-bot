@@ -40,6 +40,7 @@ export class KoyebWakeCoordinatorService
 
     recordTelegramActivity(userId: string | number, at = Date.now()) {
         this.recentTelegramUsers.set(String(userId), at);
+        console.log(this.recentTelegramUsers);
         this.pruneTelegramUsers(at);
     }
 
