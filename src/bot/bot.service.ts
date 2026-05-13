@@ -8,6 +8,7 @@ import {
     Command,
     On,
     InjectBot,
+    Next,
 } from 'nestjs-telegraf';
 import { GroupService } from 'src/group/group.service';
 import { Context, Scenes, Telegraf } from 'telegraf';
@@ -130,13 +131,21 @@ Estos son los comandos disponibles:
     }
 
     @On('message')
-    async trackMessageActivity(@Ctx() ctx: Context) {
+    async trackMessageActivity(
+        @Ctx() ctx: Context,
+        @Next() next: () => Promise<void>,
+    ) {
         this.recordTelegramActivity(ctx);
+        return next();
     }
 
     @On('callback_query')
-    async trackCallbackActivity(@Ctx() ctx: Context) {
+    async trackCallbackActivity(
+        @Ctx() ctx: Context,
+        @Next() next: () => Promise<void>,
+    ) {
         this.recordTelegramActivity(ctx);
+        return next();
     }
 
     @Hears('Hola')

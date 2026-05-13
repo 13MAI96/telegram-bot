@@ -124,9 +124,12 @@ describe('BotUpdate fixed command', () => {
             bot,
         );
 
-        await update.trackMessageActivity({ from: { id: 123 } } as any);
+        const next = jest.fn().mockResolvedValue(undefined);
+
+        await update.trackMessageActivity({ from: { id: 123 } } as any, next);
 
         expect(coordinator.recordTelegramActivity).toHaveBeenCalledWith('123');
+        expect(next).toHaveBeenCalled();
     });
 
     it('records Telegram activity for callback queries', async () => {
@@ -141,8 +144,14 @@ describe('BotUpdate fixed command', () => {
             bot,
         );
 
-        await update.trackCallbackActivity({ from: { id: 456 } } as any);
+        const next = jest.fn().mockResolvedValue(undefined);
+
+        await update.trackCallbackActivity(
+            { from: { id: 456 } } as any,
+            next,
+        );
 
         expect(coordinator.recordTelegramActivity).toHaveBeenCalledWith('456');
+        expect(next).toHaveBeenCalled();
     });
 });
