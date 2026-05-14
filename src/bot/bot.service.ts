@@ -59,21 +59,33 @@ export class BotUpdate implements OnModuleInit, OnModuleDestroy {
             }
         });
 
-        const deleteWebhookStartedAt = Date.now();
-        this.logger.log('Deleting Telegram webhook before bot launch');
-        await this.bot.telegram.deleteWebhook({ drop_pending_updates: true });
         this.logger.log(
-            `Telegram webhook deleted in ${Date.now() - deleteWebhookStartedAt}ms`,
+            `Bot module init completed in ${Date.now() - initStartedAt}ms; Telegram startup continues in background`,
         );
 
-        await this.startWithRetry();
-        this.logger.log(
-            `Bot module init completed in ${Date.now() - initStartedAt}ms`,
-        );
+        void this.initializeBotInBackground();
     }
 
     async onModuleDestroy() {
         await this.bot.stop();
+    }
+
+    private async initializeBotInBackground() {
+        try {
+            const deleteWebhookStartedAt = Date.now();
+            this.logger.log('Deleting Telegram webhook before bot launch');
+            await this.bot.telegram.deleteWebhook({ drop_pending_updates: true });
+            this.logger.log(
+                `Telegram webhook deleted in ${Date.now() - deleteWebhookStartedAt}ms`,
+            );
+
+            await this.startWithRetry();
+        } catch (err) {
+            this.logger.error(
+                'Telegram background initialization failed',
+                err instanceof Error ? err.stack : String(err),
+            );
+        }
     }
 
     private async startWithRetry(delay = 30000) {

@@ -10,9 +10,6 @@ export class KoyebWakeActivityService {
     recordTelegramActivity(userId: string | number, at = Date.now()) {
         this.recentTelegramUsers.set(String(userId), at);
         this.pruneTelegramUsers(at);
-        this.logger.debug(
-            `Recorded Telegram activity for user=${userId}; trackedUsers=${this.recentTelegramUsers.size}`,
-        );
     }
 
     getRecentlyActiveUsers(at = Date.now()): string[] {

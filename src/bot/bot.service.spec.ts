@@ -13,6 +13,38 @@ function createBot() {
 }
 
 describe('BotUpdate fixed command', () => {
+    it('does not block module init on Telegram startup', async () => {
+        let resolveDeleteWebhook: (() => void) | undefined;
+        const bot = {
+            telegram: {
+                deleteWebhook: jest.fn(
+                    () =>
+                        new Promise<void>((resolve) => {
+                            resolveDeleteWebhook = resolve;
+                        }),
+                ),
+            },
+            catch: jest.fn(),
+            launch: jest.fn().mockResolvedValue(undefined),
+            stop: jest.fn().mockResolvedValue(undefined),
+            use: jest.fn(),
+        } as any;
+        const update = new BotUpdate({ hasAssignedGroup: jest.fn() } as any, bot);
+
+        await update.onModuleInit();
+
+        expect(bot.telegram.deleteWebhook).toHaveBeenCalledWith({
+            drop_pending_updates: true,
+        });
+        expect(bot.launch).not.toHaveBeenCalled();
+
+        resolveDeleteWebhook?.();
+        await Promise.resolve();
+        await Promise.resolve();
+
+        expect(bot.launch).toHaveBeenCalled();
+    });
+
     it('enters fixed when a group is assigned', async () => {
         const groupService = {
             hasAssignedGroup: jest.fn().mockResolvedValue({ _id: 'group-1' }),
