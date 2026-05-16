@@ -43,7 +43,7 @@ export class PlaneTextWizard {
             return;
         }
         const debit = this.numberService.toNumber(bill[2]);
-        if (debit <= 0) {
+        if (debit < 0) {
             await ctx.reply(
                 '🚫 Monto invalido. Recorda enviarme: descripcion, categoria, monto, cuenta y titular separados por una coma.',
             );

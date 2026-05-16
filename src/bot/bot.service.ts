@@ -134,6 +134,7 @@ export class BotUpdate implements OnModuleInit, OnModuleDestroy {
         await ctx.reply(`
 Estos son los comandos disponibles:
 /gasto - Iniciar
+/ingreso - Registrar ingreso
 /suscripcion - Cobro fijo recurrente
 /help - Ayuda
 `);
@@ -174,6 +175,20 @@ Estos son los comandos disponibles:
             );
             if (group) {
                 await ctx.scene.enter('bill', { group: group });
+            } else {
+                await ctx.scene.enter('new-group');
+            }
+        }
+    }
+
+    @Command('ingreso')
+    async startIncome(@Ctx() ctx: Scenes.SceneContext) {
+        if (ctx.message?.from.id) {
+            const group = await this.groupService.hasAssignedGroup(
+                `${ctx.message?.from.id}`,
+            );
+            if (group) {
+                await ctx.scene.enter('income', { group: group });
             } else {
                 await ctx.scene.enter('new-group');
             }

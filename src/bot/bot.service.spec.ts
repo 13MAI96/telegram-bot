@@ -83,6 +83,26 @@ describe('BotUpdate fixed command', () => {
         expect(ctx.scene.enter).toHaveBeenCalledWith('new-group');
     });
 
+    it('enters income when a group is assigned', async () => {
+        const groupService = {
+            hasAssignedGroup: jest.fn().mockResolvedValue({ _id: 'group-1' }),
+        };
+        const bot = createBot();
+        const update = new BotUpdate(groupService as any, bot);
+        const ctx = {
+            message: { from: { id: 123 } },
+            scene: {
+                enter: jest.fn(),
+            },
+        } as any;
+
+        await update.startIncome(ctx);
+
+        expect(ctx.scene.enter).toHaveBeenCalledWith('income', {
+            group: { _id: 'group-1' },
+        });
+    });
+
     it('does not enter plane-text while another scene is active', async () => {
         const groupService = {
             hasAssignedGroup: jest.fn(),

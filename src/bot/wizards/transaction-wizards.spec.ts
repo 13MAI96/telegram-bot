@@ -1,4 +1,5 @@
 import { BillWizard } from './bill.wizard';
+import { IncomeWizard } from './income.wizard';
 import { TransferWizard } from './transfer.wizard';
 import { InstallmentWizard } from './instalment.wizard';
 import { PlaneTextWizard } from './plane-text.wizard';
@@ -180,6 +181,174 @@ describe('Transaction wizards', () => {
         expect(ctx.wizard.next).not.toHaveBeenCalled();
         expect(ctx.reply).toHaveBeenCalledWith(
             expect.stringContaining('/cancelar'),
+        );
+    });
+
+    it('bill accepts a debit amount of 0 and advances to confirmation', async () => {
+        const sheetsService = {
+            getObservableData: jest.fn(),
+            appendBalanceRow: jest.fn(),
+        };
+        const wizard = new BillWizard(
+            sheetsService as any,
+            dateService,
+            numberService,
+            wizardMessageService,
+        );
+        const ctx = createWizardContext({
+            message: { text: '0', from: { first_name: 'Tester' } },
+            wizard: {
+                state: {},
+                next: jest.fn(),
+            },
+        });
+
+        await wizard.step7(ctx);
+
+        expect(ctx.wizard.state.debit).toBe(0);
+        expect(ctx.wizard.state.credit).toBe(0);
+        expect(ctx.wizard.next).toHaveBeenCalled();
+        expect(ctx.reply).toHaveBeenCalledWith(
+            expect.stringContaining('Debito: 0'),
+        );
+    });
+
+    it('income accepts a credit amount of 0 and advances to confirmation', async () => {
+        const sheetsService = {
+            getObservableData: jest.fn(),
+            appendBalanceRow: jest.fn(),
+        };
+        const wizard = new IncomeWizard(
+            sheetsService as any,
+            dateService,
+            numberService,
+            wizardMessageService,
+        );
+        const ctx = createWizardContext({
+            message: { text: '0', from: { first_name: 'Tester' } },
+            wizard: {
+                state: {
+                    date: '12/05/2026',
+                    category: 'Sueldo',
+                    description: 'Cobro',
+                    account: 'BANCO',
+                    owner: 'Tester',
+                },
+                next: jest.fn(),
+            },
+        });
+
+        await wizard.step7(ctx);
+
+        expect(ctx.wizard.state.debit).toBe(0);
+        expect(ctx.wizard.state.credit).toBe(0);
+        expect(ctx.wizard.next).toHaveBeenCalled();
+        expect(ctx.reply).toHaveBeenCalledWith(
+            expect.stringContaining('Credito: 0'),
+        );
+    });
+
+    it('transfer accepts a debit amount of 0', async () => {
+        const sheetsService = {
+            getObservableData: jest.fn(),
+            appendBalanceRow: jest.fn(),
+        };
+        const wizard = new TransferWizard(
+            sheetsService as any,
+            dateService,
+            numberService,
+            wizardMessageService,
+        );
+        const ctx = createWizardContext({
+            message: { text: '0', from: { first_name: 'Tester' } },
+            wizard: {
+                state: {
+                    group: { self_transfer_category: 'Transferencias propias' },
+                    date: '12/05/2026',
+                    origin_account: 'CAJA',
+                    origin_owner: 'Tester',
+                    final_account: 'BANCO',
+                    final_owner: 'Tester',
+                },
+                next: jest.fn(),
+            },
+        });
+
+        await wizard.step7(ctx);
+
+        expect(ctx.wizard.state.debit).toBe(0);
+        expect(ctx.wizard.next).toHaveBeenCalled();
+        expect(ctx.reply).toHaveBeenCalledWith(
+            expect.stringContaining('Debito: 0'),
+        );
+    });
+
+    it('instalment accepts a total amount of 0', async () => {
+        const sheetsService = {
+            appendBalanceRow: jest.fn(),
+        };
+        const wizard = new InstallmentWizard(
+            sheetsService as any,
+            dateService,
+            numberService,
+            wizardMessageService,
+        );
+        const ctx = createWizardContext({
+            message: { text: '0', from: { first_name: 'Tester' } },
+            wizard: {
+                state: {
+                    instalments: 3,
+                    date: '12/05/2026',
+                    category: 'Tarjeta',
+                    description: 'Compra',
+                    account: 'BANCO',
+                    owner: 'Tester',
+                },
+                next: jest.fn(),
+            },
+        });
+
+        await wizard.step7(ctx);
+
+        expect(ctx.wizard.state.debit).toBe(0);
+        expect(ctx.wizard.state.instalment_dates).toEqual([
+            '12/05/2026',
+            '12/06/2026',
+            '12/07/2026',
+        ]);
+        expect(ctx.wizard.next).toHaveBeenCalled();
+    });
+
+    it('plane-text accepts a debit amount of 0', async () => {
+        const sheetsService = {
+            appendBalanceRow: jest.fn(),
+        };
+        const wizard = new PlaneTextWizard(
+            sheetsService as any,
+            dateService,
+            numberService,
+            wizardMessageService,
+        );
+        const ctx = createWizardContext({
+            wizard: {
+                state: {
+                    text: 'Cafe,Comida,0,EFECTIVO,Tester',
+                    group: {
+                        categories: ['Comida'],
+                        accounts: ['EFECTIVO'],
+                        holders: ['Tester'],
+                    },
+                },
+                next: jest.fn(),
+            },
+        });
+
+        await wizard.step1(ctx);
+
+        expect(ctx.wizard.state.debit).toBe(0);
+        expect(ctx.wizard.next).toHaveBeenCalled();
+        expect(ctx.reply).toHaveBeenCalledWith(
+            expect.stringContaining('Debito: 0'),
         );
     });
 

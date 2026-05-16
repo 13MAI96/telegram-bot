@@ -213,10 +213,10 @@ ${group.instalment_categories
         if (ctx.message) {
             const debit = this.numberService.toNumber(ctx.message['text']);
             const instalments = ctx.wizard.state['instalments'];
-            if (debit <= 0) {
+            if (debit < 0) {
                 await ctx.reply(
                     this.wizardMessageService.buildInvalidAmountMessage(
-                        'Ingresá un monto mayor a 0.',
+                        'Ingresá un número válido mayor o igual a 0.',
                     ),
                 );
                 return;

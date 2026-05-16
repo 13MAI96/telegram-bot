@@ -158,10 +158,10 @@ export class TransferWizard {
     async step7(@Ctx() ctx: Scenes.WizardContext) {
         if (ctx.message) {
             const debit = this.numberService.toNumber(ctx.message['text']);
-            if (debit <= 0) {
+            if (debit < 0) {
                 await ctx.reply(
                     this.wizardMessageService.buildInvalidAmountMessage(
-                        'Ingresá un monto mayor a 0.',
+                        'Ingresá un número válido mayor o igual a 0.',
                     ),
                 );
                 return;

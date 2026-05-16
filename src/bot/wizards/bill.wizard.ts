@@ -153,25 +153,7 @@ export class BillWizard {
     async step7(@Ctx() ctx: Scenes.WizardContext) {
         if (ctx.message) {
             const debit = this.numberService.toNumber(ctx.message['text']);
-            if (debit <= 0) {
-                await ctx.reply(
-                    this.wizardMessageService.buildInvalidAmountMessage(
-                        'Ingresá un monto mayor a 0.',
-                    ),
-                );
-                return;
-            }
-            ctx.wizard.state['debit'] = debit;
-            await ctx.reply(`Cuanto deberia acreditar en la cuenta?`);
-            ctx.wizard.next();
-        }
-    }
-
-    @WizardStep(8)
-    async step8(@Ctx() ctx: Scenes.WizardContext) {
-        if (ctx.message) {
-            const credit = this.numberService.toNumber(ctx.message['text']);
-            if (credit < 0) {
+            if (debit < 0) {
                 await ctx.reply(
                     this.wizardMessageService.buildInvalidAmountMessage(
                         'Ingresá un número válido mayor o igual a 0.',
@@ -179,7 +161,8 @@ export class BillWizard {
                 );
                 return;
             }
-            ctx.wizard.state['credit'] = credit;
+            ctx.wizard.state['debit'] = debit;
+            ctx.wizard.state['credit'] = 0;
             ctx.wizard.state['created_by'] = ctx.message.from.first_name;
             await ctx.reply(
                 `✅ Confirmo tus datos:
@@ -198,7 +181,7 @@ export class BillWizard {
         }
     }
 
-    @WizardStep(9)
+    @WizardStep(8)
     @Hears(/sí|si|Si/i)
     async confirm(@Ctx() ctx: Scenes.WizardContext) {
         const group = ctx.wizard.state['group'];
@@ -225,7 +208,7 @@ export class BillWizard {
         }
     }
 
-    @WizardStep(9)
+    @WizardStep(8)
     @Hears(/no|No/i)
     async cancel(@Ctx() ctx: Scenes.WizardContext) {
         await ctx.reply(
