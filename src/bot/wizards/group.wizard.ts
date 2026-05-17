@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import { Wizard, WizardStep, Ctx, Hears, Command } from 'nestjs-telegraf';
 import { Scenes } from 'telegraf';
 import { Spreadsheet } from 'src/schemas/sheet.schema';
@@ -6,6 +7,8 @@ import { GroupService } from 'src/group/group.service';
 
 @Wizard('new-group')
 export class GroupWizard {
+    private readonly logger = new Logger(GroupWizard.name);
+
     constructor(private groupService: GroupService) {}
 
     @WizardStep(1)
@@ -90,7 +93,9 @@ Deberia empezar asi: https://docs.google.com/spreadsheets/d/
                 /^https:\/\/docs\.google\.com\/spreadsheets\/d\/([a-zA-Z0-9-_]+)\/edit\?gid=(\d+)(#gid=\d+)?$/;
             const match = url.match(regex);
             if (!match) {
-                console.log(match);
+                this.logger.warn(
+                    `Invalid Google Sheet URL received from user=${ctx.message.from.id}: ${url}`,
+                );
                 throw new Error('Invalid Google Sheet URL format');
             }
             const [, id, sheet] = match;
@@ -289,9 +294,21 @@ ${holders.join(`\n`)}
     async step14(@Ctx() ctx: Scenes.WizardContext) {
         if (ctx.message) {
             await ctx.reply(`Perfecto, dame unos minutos que lo registro.`);
-            await this.createUserGroup(ctx);
-            await ctx.reply(`Listo, ya puedes empezar a registrar tus gastos.`);
-            await ctx.scene.leave();
+            try {
+                await this.createUserGroup(ctx);
+                await ctx.reply(
+                    `Listo, ya puedes empezar a registrar tus gastos.`,
+                );
+                await ctx.scene.leave();
+            } catch (error) {
+                this.logger.error(
+                    `Failed to create group for user=${ctx.message.from.id}`,
+                    error instanceof Error ? error.stack : String(error),
+                );
+                await ctx.reply(
+                    'No pude terminar de crear el grupo. Revisá los datos e intentá nuevamente o cancelá con /cancelar.',
+                );
+            }
         }
     }
 
@@ -387,7 +404,7 @@ Las posibles categorias serian:
     `;
     };
 
-    private createUserGroup = (ctx: Scenes.WizardContext) => {
+    private async createUserGroup(ctx: Scenes.WizardContext) {
         const spreadsheet: Spreadsheet = ctx.wizard.state['spreadsheet'];
         const categories: string[] = ctx.wizard.state['categories'];
         const accounts: string[] = ctx.wizard.state['accounts'];
@@ -409,13 +426,23 @@ Las posibles categorias serian:
             instalment_category,
             self_transfer_category,
         };
-        this.groupService.create(group);
-    };
+        this.logger.log(
+            `Creating group for user=${user.id} spreadsheet=${spreadsheet?.id} categories=${categories?.length ?? 0} accounts=${accounts?.length ?? 0} holders=${holders?.length ?? 0}`,
+        );
+
+        const createdGroup = await this.groupService.create(group);
+
+        this.logger.log(
+            `Group created successfully for user=${user.id} groupId=${createdGroup?._id?.toString?.() ?? 'unknown'}`,
+        );
+    }
 
     @Command('cancelar')
     async cancelAll(@Ctx() ctx: Scenes.WizardContext) {
         if (ctx.scene?.current) {
-            console.log(ctx.wizard.step);
+            this.logger.log(
+                `Group creation cancelled by user=${ctx.message?.from?.id ?? 'unknown'} at step=${ctx.wizard.step}`,
+            );
             await ctx.reply('❌ Proceso cancelado.');
             await ctx.scene.leave();
         } else {
