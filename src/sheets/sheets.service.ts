@@ -93,6 +93,29 @@ export class SheetsService {
         }
     }
 
+    async getSheetIdByName(
+        spreadsheetId: string,
+        sheetName: string,
+    ): Promise<string | null> {
+        const response = await this.sheets.spreadsheets.get({
+            spreadsheetId,
+            fields: 'sheets.properties(sheetId,title)',
+        });
+
+        const normalizedSheetName = sheetName.trim().toLowerCase();
+        const sheet = response.data.sheets?.find(
+            (entry) =>
+                entry.properties?.title?.trim().toLowerCase() ===
+                normalizedSheetName,
+        );
+
+        if (sheet?.properties?.sheetId === undefined) {
+            return null;
+        }
+
+        return String(sheet.properties.sheetId);
+    }
+
     public getObservableData = async (group: Group): Promise<Observation> => {
         const holders: string[] = group.holders;
         const accounts: string[] = group.accounts;

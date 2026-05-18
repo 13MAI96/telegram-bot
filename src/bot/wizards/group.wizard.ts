@@ -4,12 +4,16 @@ import { Scenes } from 'telegraf';
 import { Spreadsheet } from 'src/schemas/sheet.schema';
 import { CreateGroupDto } from 'src/group/dto/create-group.dto';
 import { GroupService } from 'src/group/group.service';
+import { SheetsService } from 'src/sheets/sheets.service';
 
 @Wizard('new-group')
 export class GroupWizard {
     private readonly logger = new Logger(GroupWizard.name);
 
-    constructor(private groupService: GroupService) {}
+    constructor(
+        private groupService: GroupService,
+        private sheetsService: SheetsService,
+    ) {}
 
     @WizardStep(1)
     async start(@Ctx() ctx: Scenes.WizardContext) {
@@ -89,19 +93,19 @@ Deberia empezar asi: https://docs.google.com/spreadsheets/d/
     async step5(@Ctx() ctx: Scenes.WizardContext) {
         if (ctx.message) {
             const url = ctx.message['text'];
-            const regex =
-                /^https:\/\/docs\.google\.com\/spreadsheets\/d\/([a-zA-Z0-9-_]+)\/edit\?gid=(\d+)(#gid=\d+)?$/;
-            const match = url.match(regex);
-            if (!match) {
+            const parsedSpreadsheet = this.parseSpreadsheetUrl(url);
+            if (!parsedSpreadsheet) {
                 this.logger.warn(
                     `Invalid Google Sheet URL received from user=${ctx.message.from.id}: ${url}`,
                 );
-                throw new Error('Invalid Google Sheet URL format');
+                await ctx.reply(
+                    'No pude reconocer ese link de Google Sheets. Enviame el link del archivo o de la pestaña donde querés guardar las transacciones.',
+                );
+                return;
             }
-            const [, id, sheet] = match;
             ctx.wizard.state['spreadsheet'] = {
-                id: id,
-                balance_sheet: { id: sheet, name: '' },
+                id: parsedSpreadsheet.id,
+                balance_sheet: { id: parsedSpreadsheet.sheetId ?? '', name: '' },
             };
             await ctx.reply(`Bien, me confirmas el nombre de la hoja?`);
             await ctx.wizard.next();
@@ -114,6 +118,38 @@ Deberia empezar asi: https://docs.google.com/spreadsheets/d/
             const name = ctx.message['text'];
             const sheet: Spreadsheet = ctx.wizard.state['spreadsheet'];
             sheet.balance_sheet.name = name;
+
+            if (!sheet.balance_sheet.id) {
+                try {
+                    const resolvedSheetId =
+                        await this.sheetsService.getSheetIdByName(
+                            sheet.id,
+                            name,
+                        );
+
+                    if (!resolvedSheetId) {
+                        this.logger.warn(
+                            `Sheet name not found while creating group for user=${ctx.message.from.id} spreadsheet=${sheet.id} sheetName=${name}`,
+                        );
+                        await ctx.reply(
+                            'No encontré una pestaña con ese nombre dentro del archivo. Revisá el nombre exacto e intentá nuevamente.',
+                        );
+                        return;
+                    }
+
+                    sheet.balance_sheet.id = resolvedSheetId;
+                } catch (error) {
+                    this.logger.error(
+                        `Failed to resolve sheet id for user=${ctx.message.from.id} spreadsheet=${sheet.id} sheetName=${name}`,
+                        error instanceof Error ? error.stack : String(error),
+                    );
+                    await ctx.reply(
+                        'No pude validar esa hoja en Google Sheets. Revisá el link, el nombre de la hoja y los permisos, e intentá nuevamente.',
+                    );
+                    return;
+                }
+            }
+
             ctx.wizard.state['spreadsheet'] = sheet;
             await ctx.reply(
                 `
@@ -447,6 +483,31 @@ Las posibles categorias serian:
             await ctx.scene.leave();
         } else {
             await ctx.reply('No hay una conversación activa.');
+        }
+    }
+
+    private parseSpreadsheetUrl(
+        rawUrl: string,
+    ): { id: string; sheetId: string | null } | null {
+        try {
+            const parsedUrl = new URL(rawUrl.trim());
+            const match = parsedUrl.pathname.match(
+                /^\/spreadsheets\/d\/([a-zA-Z0-9-_]+)\/edit$/,
+            );
+
+            if (!match) {
+                return null;
+            }
+
+            const sheetIdFromQuery = parsedUrl.searchParams.get('gid');
+            const sheetIdFromHash = parsedUrl.hash.match(/gid=(\d+)/)?.[1];
+
+            return {
+                id: match[1],
+                sheetId: sheetIdFromQuery ?? sheetIdFromHash ?? null,
+            };
+        } catch {
+            return null;
         }
     }
 }
