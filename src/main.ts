@@ -1,7 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { BotModule } from './bot/bot.module';
-import { KoyebWakeCoordinatorService } from './bot/services/koyeb-wake-coordinator.service';
+import { KoyebWakeCoordinatorService } from './bot/services/koyeb-wake-coordinator/koyeb-wake-coordinator.service';
 import { NextFunction, Request, Response } from 'express';
 
 async function bootstrap() {

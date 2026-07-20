@@ -2,9 +2,9 @@ import { Wizard, WizardStep, Ctx, Hears, Command } from 'nestjs-telegraf';
 import { Scenes } from 'telegraf';
 import { SheetsService } from 'src/sheets/sheets.service';
 import { Group } from 'src/schemas/group.schema';
-import { DateService } from 'src/shared/services/date.service';
-import { NumberService } from 'src/shared/services/number.service';
-import { WizardMessageService } from 'src/shared/services/wizard-message.service';
+import { DateService } from 'src/shared/services/date/date.service';
+import { NumberService } from 'src/shared/services/number/number.service';
+import { WizardMessageService } from 'src/shared/services/wizard-message/wizard-message.service';
 
 @Wizard('plane-text')
 export class PlaneTextWizard {

@@ -1,5 +1,5 @@
 import { ConfigService } from '@nestjs/config';
-import { KoyebWakeActivityService } from './koyeb-wake-activity.service';
+import { KoyebWakeActivityService } from '../koyeb-wake-activity/koyeb-wake-activity.service';
 import { KoyebWakeCoordinatorService } from './koyeb-wake-coordinator.service';
 
 function createService(overrides: Record<string, unknown> = {}) {

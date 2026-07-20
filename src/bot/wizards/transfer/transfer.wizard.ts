@@ -2,12 +2,12 @@ import { Wizard, WizardStep, Ctx, Hears, Command } from 'nestjs-telegraf';
 import { Scenes } from 'telegraf';
 import { SheetsService } from 'src/sheets/sheets.service';
 import { Group } from 'src/schemas/group.schema';
-import { DateService } from 'src/shared/services/date.service';
-import { NumberService } from 'src/shared/services/number.service';
-import { WizardMessageService } from 'src/shared/services/wizard-message.service';
+import { DateService } from 'src/shared/services/date/date.service';
+import { NumberService } from 'src/shared/services/number/number.service';
+import { WizardMessageService } from 'src/shared/services/wizard-message/wizard-message.service';
 
-@Wizard('bill')
-export class BillWizard {
+@Wizard('transfer')
+export class TransferWizard {
     constructor(
         private sheetsService: SheetsService,
         private dateService: DateService,
@@ -17,10 +17,17 @@ export class BillWizard {
 
     @WizardStep(1)
     async step1(@Ctx() ctx: Scenes.WizardContext) {
+        const group: Group = ctx.wizard.state['group'];
+        if (!group.self_transfer_category) {
+            await ctx.reply(
+                'Primero debés configurar una categoría para transferencias entre cuentas propias.',
+            );
+            return ctx.scene.leave();
+        }
         this.sheetsService.getObservableData(ctx.wizard.state['group']);
         await ctx.reply(
             this.wizardMessageService.buildDatePrompt(
-                '🗓 ¿Cuál es la fecha del gasto? (dd/mm/yyyy)',
+                '🗓 ¿Cuál es la fecha de la transferencia? (dd/mm/yyyy)',
             ),
         );
         ctx.wizard.next();
@@ -28,14 +35,15 @@ export class BillWizard {
 
     @WizardStep(2)
     async step2(@Ctx() ctx: Scenes.WizardContext) {
-        const group: Group = ctx.wizard.state['group'];
         if (ctx.message) {
             const resolvedDate = this.dateService.resolveDateInput(
                 ctx.message['text'],
             );
             if (resolvedDate) {
                 ctx.wizard.state['date'] = resolvedDate;
-                await this.promptCategory(ctx, group);
+                await ctx.reply(
+                    `Fecha: ${ctx.wizard.state['date']} \n¿Desde que cuenta moviste el dinero?`,
+                );
                 ctx.wizard.next();
                 return;
             }
@@ -50,39 +58,23 @@ export class BillWizard {
         }
     }
 
-    private async promptCategory(ctx: Scenes.WizardContext, group: Group) {
-        await ctx.reply(`Fecha: ${ctx.wizard.state['date']} \n¿A cual de estas categoria corresponde? (Mandame solo el numero.)
-  ${group.categories
-      .map((x, index) => {
-          return `${index}. ${x}`;
-      })
-      .join(`\n\t`)}`);
-    }
-
     @WizardStep(3)
     async step3(@Ctx() ctx: Scenes.WizardContext) {
         if (ctx.message) {
             const group: Group = ctx.wizard.state['group'];
-            const message = ctx.message['text'];
-            const selected = parseInt(message);
-            if (
-                !isNaN(selected) &&
-                selected > -1 &&
-                selected < group.categories.length
-            ) {
-                ctx.wizard.state['category'] = group.categories[message];
+            const message = ctx.message['text'].toUpperCase();
+            if (group.accounts.find((x) => x == message)) {
+                ctx.wizard.state['origin_account'] = message;
                 await ctx.reply(
-                    `Categoria ${ctx.wizard.state['category']} \n¿Me describis de que es este gasto?`,
+                    `Cuenta ${ctx.wizard.state['origin_account']} \n¿Quien es el titular de esa cuenta?`,
                 );
                 ctx.wizard.next();
             } else {
                 await ctx.reply(
                     this.wizardMessageService.buildRetryMessage(
-                        'La categoría ingresada no es válida.',
-                        'Ingresá nuevamente el número de una categoría.',
-                        group.categories
-                            .map((x, index) => `${index}. ${x}`)
-                            .join('\n'),
+                        'La cuenta ingresada no es válida.',
+                        'Seleccioná una cuenta de la lista.',
+                        group.accounts.map((x) => `- ${x}`).join('\n'),
                     ),
                 );
                 return;
@@ -93,11 +85,24 @@ export class BillWizard {
     @WizardStep(4)
     async step4(@Ctx() ctx: Scenes.WizardContext) {
         if (ctx.message) {
-            ctx.wizard.state['description'] = ctx.message['text'];
-            await ctx.reply(
-                `Descripcion ${ctx.wizard.state['description']} \n¿Desde que cuenta realizaste la transaccion?`,
-            );
-            ctx.wizard.next();
+            const group: Group = ctx.wizard.state['group'];
+            const message = ctx.message;
+            if (group.holders.find((x) => x == message['text'])) {
+                ctx.wizard.state['origin_owner'] = message['text'];
+                await ctx.reply(
+                    `Titular: ${ctx.wizard.state['origin_owner']} \n¿A que cuenta moviste la plata?`,
+                );
+                ctx.wizard.next();
+            } else {
+                await ctx.reply(
+                    this.wizardMessageService.buildRetryMessage(
+                        'El titular ingresado no es válido.',
+                        'Ingresá nuevamente uno de los titulares configurados.',
+                        group.holders.map((x) => `- ${x}`).join('\n'),
+                    ),
+                );
+                return;
+            }
         }
     }
 
@@ -107,9 +112,9 @@ export class BillWizard {
             const group: Group = ctx.wizard.state['group'];
             const message = ctx.message['text'].toUpperCase();
             if (group.accounts.find((x) => x == message)) {
-                ctx.wizard.state['account'] = message;
+                ctx.wizard.state['final_account'] = message;
                 await ctx.reply(
-                    `Cuenta ${ctx.wizard.state['account']} \n¿Quien es el titular de esa cuenta?`,
+                    `Cuenta ${ctx.wizard.state['final_account']} \n¿Quien es el titular de esa cuenta?`,
                 );
                 ctx.wizard.next();
             } else {
@@ -131,9 +136,9 @@ export class BillWizard {
             const group: Group = ctx.wizard.state['group'];
             const message = ctx.message;
             if (group.holders.find((x) => x == message['text'])) {
-                ctx.wizard.state['owner'] = message['text'];
+                ctx.wizard.state['final_owner'] = message['text'];
                 await ctx.reply(
-                    `Titular: ${ctx.wizard.state['owner']} \n¿Cuanto deberia debitar de la cuenta?`,
+                    `Titular: ${ctx.wizard.state['final_owner']} \n¿De cuanto fue la transferencia?`,
                 );
                 ctx.wizard.next();
             } else {
@@ -161,18 +166,28 @@ export class BillWizard {
                 );
                 return;
             }
+            const group: Group = ctx.wizard.state['group'];
             ctx.wizard.state['debit'] = debit;
-            ctx.wizard.state['credit'] = 0;
             ctx.wizard.state['created_by'] = ctx.message.from.first_name;
             await ctx.reply(
                 `✅ Confirmo tus datos:
                 Fecha: ${ctx.wizard.state['date']}
-                Categoria: ${ctx.wizard.state['category']}
-                Descripcion: ${ctx.wizard.state['description']}
-                Cuenta: ${ctx.wizard.state['account']}
-                Titular: ${ctx.wizard.state['owner']}
+                Categoria: ${group.self_transfer_category}
+                Descripcion: ${ctx.wizard.state['origin_account']} to ${ctx.wizard.state['final_account']}
+                Cuenta: ${ctx.wizard.state['origin_account']}
+                Titular: ${ctx.wizard.state['origin_owner']}
                 Debito: ${ctx.wizard.state['debit']}
-                Credito: ${ctx.wizard.state['credit']}
+                Credito: 0
+                Creado por: ${ctx.wizard.state['created_by']}
+
+            Destino:
+                Fecha: ${ctx.wizard.state['date']}
+                Categoria: ${group.self_transfer_category}
+                Descripcion: ${ctx.wizard.state['origin_account']} to ${ctx.wizard.state['final_account']}
+                Cuenta: ${ctx.wizard.state['final_account']}
+                Titular: ${ctx.wizard.state['final_owner']}
+                Debito: 0
+                Credito: ${ctx.wizard.state['debit']}
                 Creado por: ${ctx.wizard.state['created_by']}
                 
             ¿Deseás confirmar? (sí/no)`,
@@ -181,34 +196,49 @@ export class BillWizard {
         }
     }
 
-    @WizardStep(8)
+    @WizardStep(9)
     @Hears(/sí|si|Si/i)
     async confirm(@Ctx() ctx: Scenes.WizardContext) {
         const group = ctx.wizard.state['group'];
-        const sheetArray = [
+        let persistedRows = 0;
+        const debitArray = [
             ctx.wizard.state['date'],
-            ctx.wizard.state['category'],
-            ctx.wizard.state['description'],
-            ctx.wizard.state['account'],
-            ctx.wizard.state['owner'],
+            group.self_transfer_category,
+            `${ctx.wizard.state['origin_account']} to ${ctx.wizard.state['final_account']}`,
+            ctx.wizard.state['origin_account'],
+            ctx.wizard.state['origin_owner'],
             ctx.wizard.state['debit'],
-            ctx.wizard.state['credit'],
+            0,
+            ctx.wizard.state['created_by'],
+        ];
+        const creditArray = [
+            ctx.wizard.state['date'],
+            group.self_transfer_category,
+            `${ctx.wizard.state['origin_account']} to ${ctx.wizard.state['final_account']}`,
+            ctx.wizard.state['final_account'],
+            ctx.wizard.state['final_owner'],
+            0,
+            ctx.wizard.state['debit'],
             ctx.wizard.state['created_by'],
         ];
 
         try {
-            await this.sheetsService.appendBalanceRow(sheetArray, group);
+            await this.sheetsService.appendBalanceRow(debitArray, group);
+            persistedRows += 1;
+            await this.sheetsService.appendBalanceRow(creditArray, group);
             await ctx.reply('🎉 ¡Registro completado!');
             return ctx.scene.leave();
         } catch {
             await ctx.reply(
-                this.wizardMessageService.buildPersistenceFailureMessage(),
+                persistedRows > 0
+                    ? this.wizardMessageService.buildPartialPersistenceFailureMessage()
+                    : this.wizardMessageService.buildPersistenceFailureMessage(),
             );
             return;
         }
     }
 
-    @WizardStep(8)
+    @WizardStep(9)
     @Hears(/no|No/i)
     async cancel(@Ctx() ctx: Scenes.WizardContext) {
         await ctx.reply(

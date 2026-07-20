@@ -2,12 +2,12 @@ import { Wizard, WizardStep, Ctx, Hears, Command } from 'nestjs-telegraf';
 import { Scenes } from 'telegraf';
 import { SheetsService } from 'src/sheets/sheets.service';
 import { Group } from 'src/schemas/group.schema';
-import { DateService } from 'src/shared/services/date.service';
-import { NumberService } from 'src/shared/services/number.service';
-import { WizardMessageService } from 'src/shared/services/wizard-message.service';
+import { DateService } from 'src/shared/services/date/date.service';
+import { NumberService } from 'src/shared/services/number/number.service';
+import { WizardMessageService } from 'src/shared/services/wizard-message/wizard-message.service';
 
-@Wizard('income')
-export class IncomeWizard {
+@Wizard('bill')
+export class BillWizard {
     constructor(
         private sheetsService: SheetsService,
         private dateService: DateService,
@@ -20,7 +20,7 @@ export class IncomeWizard {
         this.sheetsService.getObservableData(ctx.wizard.state['group']);
         await ctx.reply(
             this.wizardMessageService.buildDatePrompt(
-                '🗓 ¿Cuál es la fecha del ingreso? (dd/mm/yyyy)',
+                '🗓 ¿Cuál es la fecha del gasto? (dd/mm/yyyy)',
             ),
         );
         ctx.wizard.next();
@@ -39,9 +39,15 @@ export class IncomeWizard {
                 ctx.wizard.next();
                 return;
             }
-        }
 
-        await ctx.reply(this.wizardMessageService.buildInvalidDateMessage());
+            await ctx.reply(
+                this.wizardMessageService.buildInvalidDateMessage(),
+            );
+        } else {
+            await ctx.reply(
+                this.wizardMessageService.buildInvalidDateMessage(),
+            );
+        }
     }
 
     private async promptCategory(ctx: Scenes.WizardContext, group: Group) {
@@ -66,21 +72,21 @@ export class IncomeWizard {
             ) {
                 ctx.wizard.state['category'] = group.categories[message];
                 await ctx.reply(
-                    `Categoria ${ctx.wizard.state['category']} \n¿Me describis de que es este ingreso?`,
+                    `Categoria ${ctx.wizard.state['category']} \n¿Me describis de que es este gasto?`,
                 );
                 ctx.wizard.next();
+            } else {
+                await ctx.reply(
+                    this.wizardMessageService.buildRetryMessage(
+                        'La categoría ingresada no es válida.',
+                        'Ingresá nuevamente el número de una categoría.',
+                        group.categories
+                            .map((x, index) => `${index}. ${x}`)
+                            .join('\n'),
+                    ),
+                );
                 return;
             }
-
-            await ctx.reply(
-                this.wizardMessageService.buildRetryMessage(
-                    'La categoría ingresada no es válida.',
-                    'Ingresá nuevamente el número de una categoría.',
-                    group.categories
-                        .map((x, index) => `${index}. ${x}`)
-                        .join('\n'),
-                ),
-            );
         }
     }
 
@@ -89,7 +95,7 @@ export class IncomeWizard {
         if (ctx.message) {
             ctx.wizard.state['description'] = ctx.message['text'];
             await ctx.reply(
-                `Descripcion ${ctx.wizard.state['description']} \n¿En que cuenta ingresó la transaccion?`,
+                `Descripcion ${ctx.wizard.state['description']} \n¿Desde que cuenta realizaste la transaccion?`,
             );
             ctx.wizard.next();
         }
@@ -106,16 +112,16 @@ export class IncomeWizard {
                     `Cuenta ${ctx.wizard.state['account']} \n¿Quien es el titular de esa cuenta?`,
                 );
                 ctx.wizard.next();
+            } else {
+                await ctx.reply(
+                    this.wizardMessageService.buildRetryMessage(
+                        'La cuenta ingresada no es válida.',
+                        'Seleccioná una cuenta de la lista.',
+                        group.accounts.map((x) => `- ${x}`).join('\n'),
+                    ),
+                );
                 return;
             }
-
-            await ctx.reply(
-                this.wizardMessageService.buildRetryMessage(
-                    'La cuenta ingresada no es válida.',
-                    'Seleccioná una cuenta de la lista.',
-                    group.accounts.map((x) => `- ${x}`).join('\n'),
-                ),
-            );
         }
     }
 
@@ -127,27 +133,27 @@ export class IncomeWizard {
             if (group.holders.find((x) => x == message['text'])) {
                 ctx.wizard.state['owner'] = message['text'];
                 await ctx.reply(
-                    `Titular: ${ctx.wizard.state['owner']} \n¿Cuanto deberia acreditar en la cuenta?`,
+                    `Titular: ${ctx.wizard.state['owner']} \n¿Cuanto deberia debitar de la cuenta?`,
                 );
                 ctx.wizard.next();
+            } else {
+                await ctx.reply(
+                    this.wizardMessageService.buildRetryMessage(
+                        'El titular ingresado no es válido.',
+                        'Ingresá nuevamente uno de los titulares configurados.',
+                        group.holders.map((x) => `- ${x}`).join('\n'),
+                    ),
+                );
                 return;
             }
-
-            await ctx.reply(
-                this.wizardMessageService.buildRetryMessage(
-                    'El titular ingresado no es válido.',
-                    'Ingresá nuevamente uno de los titulares configurados.',
-                    group.holders.map((x) => `- ${x}`).join('\n'),
-                ),
-            );
         }
     }
 
     @WizardStep(7)
     async step7(@Ctx() ctx: Scenes.WizardContext) {
         if (ctx.message) {
-            const credit = this.numberService.toNumber(ctx.message['text']);
-            if (credit < 0) {
+            const debit = this.numberService.toNumber(ctx.message['text']);
+            if (debit < 0) {
                 await ctx.reply(
                     this.wizardMessageService.buildInvalidAmountMessage(
                         'Ingresá un número válido mayor o igual a 0.',
@@ -155,8 +161,8 @@ export class IncomeWizard {
                 );
                 return;
             }
-            ctx.wizard.state['debit'] = 0;
-            ctx.wizard.state['credit'] = credit;
+            ctx.wizard.state['debit'] = debit;
+            ctx.wizard.state['credit'] = 0;
             ctx.wizard.state['created_by'] = ctx.message.from.first_name;
             await ctx.reply(
                 `✅ Confirmo tus datos:

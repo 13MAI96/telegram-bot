@@ -8,6 +8,10 @@ import { Observation } from 'src/sheets/observation.model';
 export class BalanceWizard {
     constructor(private sheetService: SheetsService) {}
 
+    private isValidIndex(value: number, size: number) {
+        return Number.isInteger(value) && value >= 0 && value < size;
+    }
+
     @WizardStep(1)
     async start(@Ctx() ctx: Scenes.WizardContext) {
         await ctx.reply(
@@ -63,7 +67,7 @@ ${balance}
         if (ctx.message) {
             const message = parseInt(ctx.message['text']);
             const group: Group = ctx.wizard.state['group'];
-            if (message && message > 0 && message < group.holders.length) {
+            if (this.isValidIndex(message, group.holders.length)) {
                 const balance =
                     await this.sheetService.getObservableData(group);
                 const res = balance.holders.filter(
@@ -75,6 +79,8 @@ ${res}
                     `,
                 );
                 await ctx.scene.leave();
+            } else {
+                await ctx.reply(`El numero enviado no es valido.`);
             }
         }
     }
@@ -93,7 +99,7 @@ ${res}
         if (ctx.message) {
             const message = parseInt(ctx.message['text']);
             const group: Group = ctx.wizard.state['group'];
-            if (message && message > 0 && message < group.accounts.length) {
+            if (this.isValidIndex(message, group.accounts.length)) {
                 const balance =
                     await this.sheetService.getObservableData(group);
                 const res = balance.holders.map((x) => {
@@ -109,7 +115,7 @@ ${res}
                 );
                 await ctx.scene.leave();
             } else {
-                ctx.reply(`El numero enviado no es valido.`);
+                await ctx.reply(`El numero enviado no es valido.`);
             }
         }
     }

@@ -1,9 +1,9 @@
 import { Wizard, WizardStep, Ctx, Hears, Command, On } from 'nestjs-telegraf';
 import { Scenes } from 'telegraf';
-import { CsvService } from 'src/shared/services/csv.service';
+import { CsvService } from 'src/shared/services/csv/csv.service';
 import * as ExcelJs from 'exceljs';
 import * as fs from 'fs';
-import { ExcelService } from 'src/shared/services/excel.service';
+import { ExcelService } from 'src/shared/services/excel/excel.service';
 import { throwError } from 'rxjs';
 
 @Wizard('espe')

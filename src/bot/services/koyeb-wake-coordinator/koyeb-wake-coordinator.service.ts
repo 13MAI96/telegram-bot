@@ -7,7 +7,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { InjectBot } from 'nestjs-telegraf';
 import { Telegraf } from 'telegraf';
-import { KoyebWakeActivityService } from './koyeb-wake-activity.service';
+import { KoyebWakeActivityService } from '../koyeb-wake-activity/koyeb-wake-activity.service';
 
 const WARNING_DELAY_MS = 58 * 60 * 1000;
 

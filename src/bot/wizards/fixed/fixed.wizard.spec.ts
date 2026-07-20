@@ -1,7 +1,7 @@
 import { FixedWizard } from './fixed.wizard';
-import { DateService } from 'src/shared/services/date.service';
-import { NumberService } from 'src/shared/services/number.service';
-import { WizardMessageService } from 'src/shared/services/wizard-message.service';
+import { DateService } from 'src/shared/services/date/date.service';
+import { NumberService } from 'src/shared/services/number/number.service';
+import { WizardMessageService } from 'src/shared/services/wizard-message/wizard-message.service';
 
 function createCtx(overrides: Record<string, unknown> = {}) {
     return {

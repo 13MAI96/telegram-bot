@@ -1,11 +1,11 @@
-import { BillWizard } from './bill.wizard';
-import { IncomeWizard } from './income.wizard';
-import { TransferWizard } from './transfer.wizard';
-import { InstallmentWizard } from './instalment.wizard';
-import { PlaneTextWizard } from './plane-text.wizard';
-import { DateService } from 'src/shared/services/date.service';
-import { NumberService } from 'src/shared/services/number.service';
-import { WizardMessageService } from 'src/shared/services/wizard-message.service';
+import { BillWizard } from '../bill/bill.wizard';
+import { IncomeWizard } from '../income/income.wizard';
+import { TransferWizard } from '../transfer/transfer.wizard';
+import { InstallmentWizard } from '../instalment/instalment.wizard';
+import { PlaneTextWizard } from '../plane-text/plane-text.wizard';
+import { DateService } from 'src/shared/services/date/date.service';
+import { NumberService } from 'src/shared/services/number/number.service';
+import { WizardMessageService } from 'src/shared/services/wizard-message/wizard-message.service';
 
 function createWizardContext(overrides: Record<string, unknown> = {}) {
     return {
