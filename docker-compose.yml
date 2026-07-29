@@ -4,6 +4,8 @@ services:
       context: .
       target: production
     container_name: telegram-bot-app
+    env_file:
+      - .env
     environment:
       NODE_ENV: production
     ports:
