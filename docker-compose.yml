@@ -1,0 +1,11 @@
+services:
+  app:
+    build:
+      context: .
+      target: production
+    container_name: telegram-bot-app
+    environment:
+      NODE_ENV: production
+    ports:
+      - '${PORT:-3000}:3000'
+    restart: unless-stopped
