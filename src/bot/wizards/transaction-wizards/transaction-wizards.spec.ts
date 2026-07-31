@@ -676,6 +676,9 @@ describe('Transaction wizards', () => {
         expect(ctx.reply).toHaveBeenCalledWith(
             expect.stringContaining('titulares'),
         );
+        expect(ctx.reply).not.toHaveBeenCalledWith(
+            expect.stringContaining('- Tester'),
+        );
     });
 
     it('dashboard keeps user on holder step after invalid filter', async () => {
@@ -700,6 +703,65 @@ describe('Transaction wizards', () => {
         expect(ctx.wizard.next).not.toHaveBeenCalled();
         expect(ctx.reply).toHaveBeenCalledWith(
             expect.stringContaining('Titular inválido'),
+        );
+        expect(ctx.reply).not.toHaveBeenCalledWith(
+            expect.stringContaining('- Tester'),
+        );
+    });
+
+    it('dashboard prompts category exclusions after account filter', async () => {
+        const wizard = new DashboardWizard(
+            { getCashMovements: jest.fn() } as any,
+            dashboardDataService,
+            pieChartImageService,
+            wizardMessageService,
+        );
+        const ctx = createWizardContext({
+            message: { text: 'todos', from: { first_name: 'Tester' } },
+            wizard: {
+                state: {
+                    group: {
+                        accounts: ['EFECTIVO'],
+                        categories: ['Comida', 'Transporte'],
+                    },
+                },
+                next: jest.fn(),
+            },
+        });
+
+        await wizard.step4(ctx);
+
+        expect(ctx.wizard.state.accounts).toEqual(['EFECTIVO']);
+        expect(ctx.wizard.next).toHaveBeenCalled();
+        expect(ctx.reply).toHaveBeenCalledWith(
+            expect.stringContaining('1. Comida'),
+        );
+    });
+
+    it('dashboard keeps user on category exclusion step after invalid index', async () => {
+        const wizard = new DashboardWizard(
+            { getCashMovements: jest.fn() } as any,
+            dashboardDataService,
+            pieChartImageService,
+            wizardMessageService,
+        );
+        const ctx = createWizardContext({
+            message: { text: '9', from: { first_name: 'Tester' } },
+            wizard: {
+                state: {
+                    group: {
+                        categories: ['Comida'],
+                    },
+                },
+                next: jest.fn(),
+            },
+        });
+
+        await wizard.step5(ctx);
+
+        expect(ctx.wizard.next).not.toHaveBeenCalled();
+        expect(ctx.reply).toHaveBeenCalledWith(
+            expect.stringContaining('Categoría inválida'),
         );
     });
 
@@ -729,15 +791,17 @@ describe('Transaction wizards', () => {
             wizardMessageService,
         );
         const ctx = createWizardContext({
-            message: { text: 'todos', from: { first_name: 'Tester' } },
+            message: { text: 'ninguna', from: { first_name: 'Tester' } },
             wizard: {
                 state: {
                     group: {
                         accounts: ['EFECTIVO'],
+                        categories: ['Comida'],
                     },
                     month: { month: 5, year: 2026, label: '05/2026' },
                     holders: ['Tester'],
                     accounts: ['EFECTIVO'],
+                    excludedCategories: [],
                     allHolders: true,
                     allAccounts: true,
                 },
@@ -745,7 +809,7 @@ describe('Transaction wizards', () => {
             },
         });
 
-        await wizard.step4(ctx);
+        await wizard.step5(ctx);
 
         expect(ctx.replyWithPhoto).toHaveBeenCalledWith(
             { source: Buffer.from('png') },
@@ -768,15 +832,17 @@ describe('Transaction wizards', () => {
             wizardMessageService,
         );
         const ctx = createWizardContext({
-            message: { text: 'todos', from: { first_name: 'Tester' } },
+            message: { text: 'ninguna', from: { first_name: 'Tester' } },
             wizard: {
                 state: {
                     group: {
                         accounts: ['EFECTIVO'],
+                        categories: ['Comida'],
                     },
                     month: { month: 5, year: 2026, label: '05/2026' },
                     holders: ['Tester'],
                     accounts: ['EFECTIVO'],
+                    excludedCategories: [],
                     allHolders: true,
                     allAccounts: true,
                 },
@@ -784,7 +850,7 @@ describe('Transaction wizards', () => {
             },
         });
 
-        await wizard.step4(ctx);
+        await wizard.step5(ctx);
 
         expect(ctx.reply).toHaveBeenCalledWith(
             'No encontré gastos para el mes y filtros seleccionados.',
@@ -819,15 +885,17 @@ describe('Transaction wizards', () => {
             wizardMessageService,
         );
         const ctx = createWizardContext({
-            message: { text: 'todos', from: { first_name: 'Tester' } },
+            message: { text: 'ninguna', from: { first_name: 'Tester' } },
             wizard: {
                 state: {
                     group: {
                         accounts: ['EFECTIVO'],
+                        categories: ['Comida'],
                     },
                     month: { month: 5, year: 2026, label: '05/2026' },
                     holders: ['Tester'],
                     accounts: ['EFECTIVO'],
+                    excludedCategories: [],
                     allHolders: true,
                     allAccounts: true,
                 },
@@ -835,7 +903,7 @@ describe('Transaction wizards', () => {
             },
         });
 
-        await wizard.step4(ctx);
+        await wizard.step5(ctx);
 
         expect(ctx.reply).toHaveBeenCalledWith(
             expect.stringContaining('Comida: 100,00'),

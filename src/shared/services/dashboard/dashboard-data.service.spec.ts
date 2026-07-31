@@ -39,6 +39,30 @@ describe('DashboardDataService', () => {
         });
     });
 
+    it('validates excluded categories by index', () => {
+        expect(
+            service.parseExcludedCategories('1, 3', [
+                'Comida',
+                'Transporte',
+                'Servicios',
+            ]),
+        ).toEqual({
+            values: ['Comida', 'Servicios'],
+            all: false,
+        });
+        expect(service.parseExcludedCategories('ninguna', ['Comida'])).toEqual({
+            values: [],
+            all: false,
+        });
+        expect(service.parseExcludedCategories('todos', ['Comida'])).toEqual({
+            values: ['Comida'],
+            all: true,
+        });
+        expect(service.parseExcludedCategories('9', ['Comida'])).toEqual({
+            invalidValues: ['9'],
+        });
+    });
+
     it('aggregates monthly debit expenses by category and filters', () => {
         const dashboard = service.aggregateExpenseCategories(
             [
@@ -92,6 +116,7 @@ describe('DashboardDataService', () => {
             {
                 holders: ['Ana'],
                 accounts: ['EFECTIVO'],
+                excludedCategories: [],
                 allHolders: false,
                 allAccounts: false,
             },
@@ -102,6 +127,48 @@ describe('DashboardDataService', () => {
             {
                 category: 'Comida',
                 amount: 150,
+                percentage: 100,
+            },
+        ]);
+    });
+
+    it('excludes selected categories from aggregation', () => {
+        const dashboard = service.aggregateExpenseCategories(
+            [
+                {
+                    date: '12/05/2026',
+                    category: 'Comida',
+                    description: 'Cafe',
+                    account: 'EFECTIVO',
+                    holder: 'Ana',
+                    debit: 100,
+                    credit: 0,
+                },
+                {
+                    date: '12/05/2026',
+                    category: 'Transporte',
+                    description: 'Taxi',
+                    account: 'EFECTIVO',
+                    holder: 'Ana',
+                    debit: 80,
+                    credit: 0,
+                },
+            ],
+            { month: 5, year: 2026, label: '05/2026' },
+            {
+                holders: ['Ana'],
+                accounts: ['EFECTIVO'],
+                excludedCategories: ['Comida'],
+                allHolders: false,
+                allAccounts: false,
+            },
+        );
+
+        expect(dashboard.total).toBe(80);
+        expect(dashboard.categories).toEqual([
+            {
+                category: 'Transporte',
+                amount: 80,
                 percentage: 100,
             },
         ]);

@@ -7,6 +7,7 @@ export interface DashboardMonth {
 export interface DashboardFilters {
     holders: string[];
     accounts: string[];
+    excludedCategories: string[];
     allHolders: boolean;
     allAccounts: boolean;
 }
@@ -21,6 +22,7 @@ export interface ExpenseCategoryDashboard {
     month: DashboardMonth;
     holders: string[];
     accounts: string[];
+    excludedCategories: string[];
     allHolders: boolean;
     allAccounts: boolean;
     categories: ExpenseCategoryTotal[];

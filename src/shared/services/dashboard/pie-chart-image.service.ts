@@ -7,7 +7,6 @@ type Rgb = [number, number, number];
 @Injectable()
 export class PieChartImageService {
     private readonly width = 900;
-    private readonly height = 560;
     private readonly colors: Rgb[] = [
         [36, 109, 140],
         [231, 111, 81],
@@ -20,7 +19,8 @@ export class PieChartImageService {
     ];
 
     renderExpensePieChart(dashboard: ExpenseCategoryDashboard): Buffer {
-        const image = new RasterImage(this.width, this.height, [250, 248, 243]);
+        const height = Math.max(560, 150 + dashboard.categories.length * 58);
+        const image = new RasterImage(this.width, height, [250, 248, 243]);
 
         image.drawText(
             40,
@@ -72,7 +72,7 @@ export class PieChartImageService {
         const startX = 500;
         let y = 140;
 
-        dashboard.categories.slice(0, 10).forEach((category, index) => {
+        dashboard.categories.forEach((category, index) => {
             const color = this.colors[index % this.colors.length];
             image.fillRect(startX, y - 16, 24, 24, color);
             image.drawText(

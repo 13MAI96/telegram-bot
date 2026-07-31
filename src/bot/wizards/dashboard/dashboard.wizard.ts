@@ -47,11 +47,8 @@ export class DashboardWizard {
         }
 
         ctx.wizard.state['month'] = month;
-        const group: Group = ctx.wizard.state['group'];
         await ctx.reply(
-            `Mes: ${month.label}\n¿Qué titulares querés incluir? Usá todos o nombres separados por coma.\n${group.holders
-                .map((holder) => `- ${holder}`)
-                .join('\n')}`,
+            `Mes: ${month.label}\n¿Qué titulares querés incluir? Enviá todos o nombres separados por coma.`,
         );
         ctx.wizard.next();
     }
@@ -69,7 +66,6 @@ export class DashboardWizard {
                 this.wizardMessageService.buildRetryMessage(
                     `Titular inválido: ${(result.invalidValues ?? []).join(', ')}`,
                     'Enviá todos o titulares separados por coma.',
-                    group.holders.map((holder) => `- ${holder}`).join('\n'),
                 ),
             );
             return;
@@ -78,9 +74,7 @@ export class DashboardWizard {
         ctx.wizard.state['holders'] = result.values;
         ctx.wizard.state['allHolders'] = result.all ?? false;
         await ctx.reply(
-            `¿Qué cuentas querés incluir? Usá todos o nombres separados por coma.\n${group.accounts
-                .map((account) => `- ${account}`)
-                .join('\n')}`,
+            '¿Qué cuentas querés incluir? Enviá todos o nombres separados por coma.',
         );
         ctx.wizard.next();
     }
@@ -98,7 +92,6 @@ export class DashboardWizard {
                 this.wizardMessageService.buildRetryMessage(
                     `Cuenta inválida: ${(result.invalidValues ?? []).join(', ')}`,
                     'Enviá todos o cuentas separadas por coma.',
-                    group.accounts.map((account) => `- ${account}`).join('\n'),
                 ),
             );
             return;
@@ -106,6 +99,32 @@ export class DashboardWizard {
 
         ctx.wizard.state['accounts'] = result.values;
         ctx.wizard.state['allAccounts'] = result.all ?? false;
+        await ctx.reply(
+            `¿Hay categorías que quieras evitar? Indicá índices separados por coma, ninguna o todos.\n${this.buildCategoryOptions(group)}`,
+        );
+        ctx.wizard.next();
+    }
+
+    @WizardStep(5)
+    async step5(@Ctx() ctx: Scenes.WizardContext) {
+        const group: Group = ctx.wizard.state['group'];
+        const result = this.dashboardDataService.parseExcludedCategories(
+            ctx.message?.['text'],
+            group.categories,
+        );
+
+        if (!result.values || result.invalidValues) {
+            await ctx.reply(
+                this.wizardMessageService.buildRetryMessage(
+                    `Categoría inválida: ${(result.invalidValues ?? []).join(', ')}`,
+                    'Indicá índices separados por coma, ninguna o todos.',
+                    this.buildCategoryOptions(group),
+                ),
+            );
+            return;
+        }
+
+        ctx.wizard.state['excludedCategories'] = result.values;
         await this.generateDashboard(ctx);
     }
 
@@ -129,6 +148,7 @@ export class DashboardWizard {
         const filters: DashboardFilters = {
             holders: ctx.wizard.state['holders'],
             accounts: ctx.wizard.state['accounts'],
+            excludedCategories: ctx.wizard.state['excludedCategories'],
             allHolders: ctx.wizard.state['allHolders'],
             allAccounts: ctx.wizard.state['allAccounts'],
         };
@@ -172,5 +192,15 @@ export class DashboardWizard {
             await ctx.reply(fallback);
             return ctx.scene.leave();
         }
+    }
+
+    private buildCategoryOptions(group: Group): string {
+        return [
+            ...group.categories.map(
+                (category, index) => `${index + 1}. ${category}`,
+            ),
+            'ninguna',
+            'todos',
+        ].join('\n');
     }
 }

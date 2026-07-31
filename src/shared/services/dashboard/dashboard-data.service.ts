@@ -112,6 +112,50 @@ export class DashboardDataService {
         return { values: [...new Set(values)], all: false };
     }
 
+    parseExcludedCategories(
+        input: string | undefined,
+        categories: string[],
+    ): SelectionParseResult {
+        if (!input) {
+            return { invalidValues: [''] };
+        }
+
+        const normalized = this.normalizeText(input);
+        if (normalized === 'ninguna') {
+            return { values: [], all: false };
+        }
+
+        if (normalized === 'todos') {
+            return { values: [...categories], all: true };
+        }
+
+        const invalidValues: string[] = [];
+        const values = input
+            .split(',')
+            .map((value) => value.trim())
+            .filter((value) => value.length > 0)
+            .map((value) => {
+                const index = Number(value);
+                if (
+                    !Number.isInteger(index) ||
+                    index < 1 ||
+                    index > categories.length
+                ) {
+                    invalidValues.push(value);
+                    return undefined;
+                }
+
+                return categories[index - 1];
+            })
+            .filter((value): value is string => Boolean(value));
+
+        if (invalidValues.length > 0) {
+            return { invalidValues };
+        }
+
+        return { values: [...new Set(values)], all: false };
+    }
+
     aggregateExpenseCategories(
         movements: TransactionMovement[],
         month: DashboardMonth,
@@ -121,6 +165,10 @@ export class DashboardDataService {
             .filter((movement) => this.matchesMonth(movement.date, month))
             .filter((movement) => filters.holders.includes(movement.holder))
             .filter((movement) => filters.accounts.includes(movement.account))
+            .filter(
+                (movement) =>
+                    !filters.excludedCategories.includes(movement.category),
+            )
             .filter((movement) => movement.debit > 0)
             .reduce((totals, movement) => {
                 const current = totals.get(movement.category) ?? 0;
@@ -153,6 +201,7 @@ export class DashboardDataService {
             month,
             holders: filters.holders,
             accounts: filters.accounts,
+            excludedCategories: filters.excludedCategories,
             allHolders: filters.allHolders,
             allAccounts: filters.allAccounts,
             categories,
@@ -224,8 +273,12 @@ export class DashboardDataService {
         const accounts = dashboard.allAccounts
             ? 'Cuentas: todas'
             : `Cuentas: ${dashboard.accounts.join(', ')}`;
+        const excludedCategories =
+            dashboard.excludedCategories.length === 0
+                ? 'Categorías excluidas: ninguna'
+                : `Categorías excluidas: ${dashboard.excludedCategories.join(', ')}`;
 
-        return `${holders} | ${accounts}`;
+        return `${holders} | ${accounts} | ${excludedCategories}`;
     }
 
     private normalizeText(value: string): string {
