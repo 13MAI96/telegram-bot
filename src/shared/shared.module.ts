@@ -3,6 +3,7 @@ import { DateService } from './services/date/date.service';
 import { CsvService } from './services/csv/csv.service';
 import { ExcelService } from './services/excel/excel.service';
 import { NumberService } from './services/number/number.service';
+import { PlainTextTransactionService } from './services/plain-text-transaction/plain-text-transaction.service';
 import { WizardMessageService } from './services/wizard-message/wizard-message.service';
 
 @Module({
@@ -12,6 +13,7 @@ import { WizardMessageService } from './services/wizard-message/wizard-message.s
         CsvService,
         ExcelService,
         NumberService,
+        PlainTextTransactionService,
         WizardMessageService,
     ],
     exports: [
@@ -19,6 +21,7 @@ import { WizardMessageService } from './services/wizard-message/wizard-message.s
         CsvService,
         ExcelService,
         NumberService,
+        PlainTextTransactionService,
         WizardMessageService,
     ],
 })

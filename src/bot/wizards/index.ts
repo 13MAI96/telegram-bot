@@ -8,8 +8,10 @@ import { GroupWizard } from './group/group.wizard';
 import { IncomeWizard } from './income/income.wizard';
 import { InstallmentWizard } from './instalment/instalment.wizard';
 import { MemberWizard } from './member/member.wizard';
+import { PlainIncomeWizard } from './plain-income/plain-income.wizard';
 import { PlaneTextWizard } from './plane-text/plane-text.wizard';
 import { TransferWizard } from './transfer/transfer.wizard';
+import { TransactionsWizard } from './transactions/transactions.wizard';
 import { UsersWizard } from './users/users.wizard';
 import { EspeWizard } from './zespe/zespe.wizard';
 
@@ -24,8 +26,10 @@ const Wizards = [
     IncomeWizard,
     InstallmentWizard,
     MemberWizard,
+    PlainIncomeWizard,
     PlaneTextWizard,
     TransferWizard,
+    TransactionsWizard,
     UsersWizard,
     EspeWizard,
 ];

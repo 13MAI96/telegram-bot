@@ -3,8 +3,11 @@ import { IncomeWizard } from '../income/income.wizard';
 import { TransferWizard } from '../transfer/transfer.wizard';
 import { InstallmentWizard } from '../instalment/instalment.wizard';
 import { PlaneTextWizard } from '../plane-text/plane-text.wizard';
+import { PlainIncomeWizard } from '../plain-income/plain-income.wizard';
+import { TransactionsWizard } from '../transactions/transactions.wizard';
 import { DateService } from 'src/shared/services/date/date.service';
 import { NumberService } from 'src/shared/services/number/number.service';
+import { PlainTextTransactionService } from 'src/shared/services/plain-text-transaction/plain-text-transaction.service';
 import { WizardMessageService } from 'src/shared/services/wizard-message/wizard-message.service';
 
 function createWizardContext(overrides: Record<string, unknown> = {}) {
@@ -32,6 +35,10 @@ function createWizardContext(overrides: Record<string, unknown> = {}) {
 describe('Transaction wizards', () => {
     const dateService = new DateService();
     const numberService = new NumberService();
+    const plainTextTransactionService = new PlainTextTransactionService(
+        dateService,
+        numberService,
+    );
     const wizardMessageService = new WizardMessageService();
 
     beforeEach(() => {
@@ -325,14 +332,16 @@ describe('Transaction wizards', () => {
         };
         const wizard = new PlaneTextWizard(
             sheetsService as any,
-            dateService,
-            numberService,
+            plainTextTransactionService,
             wizardMessageService,
         );
         const ctx = createWizardContext({
+            message: {
+                text: 'hoy,comida,Cafe,0,efectivo,tester',
+                from: { first_name: 'Tester' },
+            },
             wizard: {
                 state: {
-                    text: 'Cafe,Comida,0,EFECTIVO,Tester',
                     group: {
                         categories: ['Comida'],
                         accounts: ['EFECTIVO'],
@@ -343,12 +352,125 @@ describe('Transaction wizards', () => {
             },
         });
 
-        await wizard.step1(ctx);
+        await wizard.step2(ctx);
 
+        expect(ctx.wizard.state.date).toBe('12/05/2026');
+        expect(ctx.wizard.state.category).toBe('Comida');
+        expect(ctx.wizard.state.account).toBe('EFECTIVO');
+        expect(ctx.wizard.state.holder).toBe('Tester');
         expect(ctx.wizard.state.debit).toBe(0);
+        expect(ctx.wizard.state.credit).toBe(0);
         expect(ctx.wizard.next).toHaveBeenCalled();
         expect(ctx.reply).toHaveBeenCalledWith(
             expect.stringContaining('Debito: 0'),
+        );
+    });
+
+    it('plain-income accepts a credit amount and canonicalizes text fields', async () => {
+        const sheetsService = {
+            appendBalanceRow: jest.fn(),
+        };
+        const wizard = new PlainIncomeWizard(
+            sheetsService as any,
+            plainTextTransactionService,
+            wizardMessageService,
+        );
+        const ctx = createWizardContext({
+            message: {
+                text: 'ayer,sueldo,Cobro,1250,banco,tester',
+                from: { first_name: 'Tester' },
+            },
+            wizard: {
+                state: {
+                    group: {
+                        categories: ['Sueldo'],
+                        accounts: ['BANCO'],
+                        holders: ['Tester'],
+                    },
+                },
+                next: jest.fn(),
+            },
+        });
+
+        await wizard.step2(ctx);
+
+        expect(ctx.wizard.state.date).toBe('11/05/2026');
+        expect(ctx.wizard.state.category).toBe('Sueldo');
+        expect(ctx.wizard.state.account).toBe('BANCO');
+        expect(ctx.wizard.state.holder).toBe('Tester');
+        expect(ctx.wizard.state.debit).toBe(0);
+        expect(ctx.wizard.state.credit).toBe(1250);
+        expect(ctx.wizard.next).toHaveBeenCalled();
+        expect(ctx.reply).toHaveBeenCalledWith(
+            expect.stringContaining('Credito: 1250'),
+        );
+    });
+
+    it('plane-text asks for the complete payload again when data is invalid', async () => {
+        const sheetsService = {
+            appendBalanceRow: jest.fn(),
+        };
+        const wizard = new PlaneTextWizard(
+            sheetsService as any,
+            plainTextTransactionService,
+            wizardMessageService,
+        );
+        const ctx = createWizardContext({
+            message: {
+                text: 'hoy,Inexistente,Cafe,100,EFECTIVO,Tester',
+                from: { first_name: 'Tester' },
+            },
+            wizard: {
+                state: {
+                    group: {
+                        categories: ['Comida'],
+                        accounts: ['EFECTIVO'],
+                        holders: ['Tester'],
+                    },
+                },
+                next: jest.fn(),
+            },
+        });
+
+        await wizard.step2(ctx);
+
+        expect(ctx.wizard.next).not.toHaveBeenCalled();
+        expect(ctx.reply).toHaveBeenCalledWith(
+            expect.stringContaining('Volvé a enviar el texto completo.'),
+        );
+    });
+
+    it('plain-income rejects non-numeric amounts', async () => {
+        const sheetsService = {
+            appendBalanceRow: jest.fn(),
+        };
+        const wizard = new PlainIncomeWizard(
+            sheetsService as any,
+            plainTextTransactionService,
+            wizardMessageService,
+        );
+        const ctx = createWizardContext({
+            message: {
+                text: 'hoy,Sueldo,Cobro,abc,BANCO,Tester',
+                from: { first_name: 'Tester' },
+            },
+            wizard: {
+                state: {
+                    group: {
+                        categories: ['Sueldo'],
+                        accounts: ['BANCO'],
+                        holders: ['Tester'],
+                    },
+                },
+                next: jest.fn(),
+            },
+        });
+
+        await wizard.step2(ctx);
+
+        expect(ctx.wizard.next).not.toHaveBeenCalled();
+        expect(ctx.reply).toHaveBeenCalledWith(
+            expect.stringContaining('El monto debe ser numérico.'),
         );
     });
 
@@ -360,8 +482,7 @@ describe('Transaction wizards', () => {
         };
         const wizard = new PlaneTextWizard(
             sheetsService as any,
-            dateService,
-            numberService,
+            plainTextTransactionService,
             wizardMessageService,
         );
         const ctx = createWizardContext({
@@ -374,17 +495,150 @@ describe('Transaction wizards', () => {
                     account: 'EFECTIVO',
                     holder: 'Tester',
                     debit: 100,
+                    credit: 0,
                     created_by: 'Tester',
                 },
             },
         });
 
-        await wizard.step2(ctx);
+        await wizard.confirm(ctx);
 
         expect(ctx.reply).toHaveBeenCalledWith(
             expect.stringContaining('No pude guardar la operación.'),
         );
         expect(ctx.reply).not.toHaveBeenCalledWith('🎉 ¡Registro completado!');
         expect(ctx.scene.leave).not.toHaveBeenCalled();
+    });
+
+    it('transactions validates account case-insensitively', async () => {
+        const sheetsService = {
+            getLatestCashMovements: jest.fn(),
+        };
+        const wizard = new TransactionsWizard(
+            sheetsService as any,
+            wizardMessageService,
+        );
+        const ctx = createWizardContext({
+            message: { text: 'efectivo', from: { first_name: 'Tester' } },
+            wizard: {
+                state: {
+                    group: {
+                        accounts: ['EFECTIVO'],
+                    },
+                },
+                next: jest.fn(),
+            },
+        });
+
+        await wizard.step2(ctx);
+
+        expect(ctx.wizard.state.account).toBe('EFECTIVO');
+        expect(ctx.wizard.next).toHaveBeenCalled();
+    });
+
+    it('transactions formats movements and omits zero values', async () => {
+        const sheetsService = {
+            getLatestCashMovements: jest.fn().mockResolvedValue([
+                {
+                    date: '12/05/2026',
+                    description: 'Cafe',
+                    account: 'EFECTIVO',
+                    holder: 'Tester',
+                    debit: 100,
+                    credit: 0,
+                },
+                {
+                    date: '11/05/2026',
+                    description: 'Sueldo',
+                    account: 'EFECTIVO',
+                    holder: 'Tester',
+                    debit: 0,
+                    credit: 500,
+                },
+            ]),
+        };
+        const wizard = new TransactionsWizard(
+            sheetsService as any,
+            wizardMessageService,
+        );
+        const ctx = createWizardContext({
+            message: { text: 'tester', from: { first_name: 'Tester' } },
+            wizard: {
+                state: {
+                    account: 'EFECTIVO',
+                    group: {
+                        holders: ['Tester'],
+                    },
+                },
+                next: jest.fn(),
+            },
+        });
+
+        await wizard.step3(ctx);
+
+        expect(ctx.reply).toHaveBeenCalledWith(
+            '12/05/2026 - Cafe - Deb.: 100\n11/05/2026 - Sueldo - Cred.: 500',
+        );
+        expect(ctx.scene.leave).toHaveBeenCalled();
+    });
+
+    it('transactions reports empty results', async () => {
+        const sheetsService = {
+            getLatestCashMovements: jest.fn().mockResolvedValue([]),
+        };
+        const wizard = new TransactionsWizard(
+            sheetsService as any,
+            wizardMessageService,
+        );
+        const ctx = createWizardContext({
+            message: { text: 'Tester', from: { first_name: 'Tester' } },
+            wizard: {
+                state: {
+                    account: 'EFECTIVO',
+                    group: {
+                        holders: ['Tester'],
+                    },
+                },
+                next: jest.fn(),
+            },
+        });
+
+        await wizard.step3(ctx);
+
+        expect(ctx.reply).toHaveBeenCalledWith(
+            'No encontré movimientos para esa cuenta y titular.',
+        );
+        expect(ctx.scene.leave).toHaveBeenCalled();
+    });
+
+    it('transactions reports spreadsheet lookup failures', async () => {
+        const sheetsService = {
+            getLatestCashMovements: jest
+                .fn()
+                .mockRejectedValue(new Error('read failed')),
+        };
+        const wizard = new TransactionsWizard(
+            sheetsService as any,
+            wizardMessageService,
+        );
+        const ctx = createWizardContext({
+            message: { text: 'Tester', from: { first_name: 'Tester' } },
+            wizard: {
+                state: {
+                    account: 'EFECTIVO',
+                    group: {
+                        holders: ['Tester'],
+                    },
+                },
+                next: jest.fn(),
+            },
+        });
+
+        await wizard.step3(ctx);
+
+        expect(ctx.reply).toHaveBeenCalledWith(
+            expect.stringContaining('No pude consultar los movimientos.'),
+        );
+        expect(ctx.scene.leave).toHaveBeenCalled();
     });
 });

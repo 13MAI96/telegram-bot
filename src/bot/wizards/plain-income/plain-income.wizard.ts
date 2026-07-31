@@ -6,8 +6,8 @@ import { PlainTextTransactionService } from 'src/shared/services/plain-text-tran
 import { WizardMessageService } from 'src/shared/services/wizard-message/wizard-message.service';
 import { PlainTextTransactionPayload } from 'src/shared/types/plain-text-transaction.types';
 
-@Wizard('plane-text')
-export class PlaneTextWizard {
+@Wizard('plain-income')
+export class PlainIncomeWizard {
     constructor(
         private sheetsService: SheetsService,
         private plainTextTransactionService: PlainTextTransactionService,
@@ -101,14 +101,14 @@ export class PlaneTextWizard {
         ctx.wizard.state['description'] = payload.description;
         ctx.wizard.state['account'] = payload.account;
         ctx.wizard.state['holder'] = payload.holder;
-        ctx.wizard.state['debit'] = payload.amount;
-        ctx.wizard.state['credit'] = 0;
+        ctx.wizard.state['debit'] = 0;
+        ctx.wizard.state['credit'] = payload.amount;
         ctx.wizard.state['created_by'] = ctx.message?.from.first_name;
     }
 
     private buildConfirmationMessage(ctx: Scenes.WizardContext): string {
         return `
-Este es el gasto que detecté:
+Este es el ingreso que detecté:
             Fecha: ${ctx.wizard.state['date']}
             Categoria: ${ctx.wizard.state['category']}
             Descripcion: ${ctx.wizard.state['description']}
@@ -123,6 +123,6 @@ Este es el gasto que detecté:
     }
 
     private buildPayloadPrompt(): string {
-        return 'Enviame el gasto con este formato: fecha, categoria, descripcion, monto, cuenta, titular';
+        return 'Enviame el ingreso con este formato: fecha, categoria, descripcion, monto, cuenta, titular';
     }
 }

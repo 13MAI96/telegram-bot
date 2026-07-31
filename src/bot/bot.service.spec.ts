@@ -29,7 +29,10 @@ describe('BotUpdate fixed command', () => {
             stop: jest.fn().mockResolvedValue(undefined),
             use: jest.fn(),
         } as any;
-        const update = new BotUpdate({ hasAssignedGroup: jest.fn() } as any, bot);
+        const update = new BotUpdate(
+            { hasAssignedGroup: jest.fn() } as any,
+            bot,
+        );
 
         await update.onModuleInit();
 
@@ -103,6 +106,84 @@ describe('BotUpdate fixed command', () => {
         });
     });
 
+    it('enters plane-text from gasto_plano when a group is assigned', async () => {
+        const groupService = {
+            hasAssignedGroup: jest.fn().mockResolvedValue({ _id: 'group-1' }),
+        };
+        const bot = createBot();
+        const update = new BotUpdate(groupService as any, bot);
+        const ctx = {
+            message: { from: { id: 123 }, text: '/gasto_plano' },
+            scene: {
+                enter: jest.fn(),
+            },
+        } as any;
+
+        await update.startPlainBill(ctx);
+
+        expect(ctx.scene.enter).toHaveBeenCalledWith('plane-text', {
+            group: { _id: 'group-1' },
+        });
+    });
+
+    it('enters plain-income from ingreso_plano when a group is assigned', async () => {
+        const groupService = {
+            hasAssignedGroup: jest.fn().mockResolvedValue({ _id: 'group-1' }),
+        };
+        const bot = createBot();
+        const update = new BotUpdate(groupService as any, bot);
+        const ctx = {
+            message: { from: { id: 123 }, text: '/ingreso_plano' },
+            scene: {
+                enter: jest.fn(),
+            },
+        } as any;
+
+        await update.startPlainIncome(ctx);
+
+        expect(ctx.scene.enter).toHaveBeenCalledWith('plain-income', {
+            group: { _id: 'group-1' },
+        });
+    });
+
+    it('enters transactions when a group is assigned', async () => {
+        const groupService = {
+            hasAssignedGroup: jest.fn().mockResolvedValue({ _id: 'group-1' }),
+        };
+        const bot = createBot();
+        const update = new BotUpdate(groupService as any, bot);
+        const ctx = {
+            message: { from: { id: 123 }, text: '/transactions' },
+            scene: {
+                enter: jest.fn(),
+            },
+        } as any;
+
+        await update.transactions(ctx);
+
+        expect(ctx.scene.enter).toHaveBeenCalledWith('transactions', {
+            group: { _id: 'group-1' },
+        });
+    });
+
+    it('redirects plain-income to onboarding when no group is assigned', async () => {
+        const groupService = {
+            hasAssignedGroup: jest.fn().mockResolvedValue(null),
+        };
+        const bot = createBot();
+        const update = new BotUpdate(groupService as any, bot);
+        const ctx = {
+            message: { from: { id: 123 }, text: '/ingreso_plano' },
+            scene: {
+                enter: jest.fn(),
+            },
+        } as any;
+
+        await update.startPlainIncome(ctx);
+
+        expect(ctx.scene.enter).toHaveBeenCalledWith('new-group');
+    });
+
     it('does not enter plane-text while another scene is active', async () => {
         const groupService = {
             hasAssignedGroup: jest.fn(),
@@ -131,6 +212,25 @@ describe('BotUpdate fixed command', () => {
         const update = new BotUpdate(groupService as any, bot);
         const ctx = {
             message: { from: { id: 123 }, text: '/help' },
+            scene: {
+                enter: jest.fn(),
+            },
+        } as any;
+
+        await update.planeTextManager(ctx);
+
+        expect(groupService.hasAssignedGroup).not.toHaveBeenCalled();
+        expect(ctx.scene.enter).not.toHaveBeenCalled();
+    });
+
+    it('does not enter plane-text for arbitrary free text', async () => {
+        const groupService = {
+            hasAssignedGroup: jest.fn(),
+        };
+        const bot = createBot();
+        const update = new BotUpdate(groupService as any, bot);
+        const ctx = {
+            message: { from: { id: 123 }, text: 'Cafe,Comida,100,EFECTIVO,Yo' },
             scene: {
                 enter: jest.fn(),
             },

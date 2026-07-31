@@ -6,6 +6,7 @@ import {
     ObservationAccount,
     ObservationHolder,
 } from './observation.model';
+import { TransactionMovement } from './transaction-movement.model';
 
 @Injectable()
 export class SheetsService {
@@ -87,6 +88,40 @@ export class SheetsService {
         } catch (error) {
             this.logger.error(
                 `Failed to append row to spreadsheet ${group.spreadsheet.id}`,
+                error instanceof Error ? error.stack : String(error),
+            );
+            throw error;
+        }
+    }
+
+    async getLatestCashMovements(
+        group: Group,
+        account: string,
+        holder: string,
+        limit = 5,
+    ): Promise<TransactionMovement[]> {
+        try {
+            const response = await this.sheets.spreadsheets.values.get({
+                spreadsheetId: group.spreadsheet.id,
+                range: 'Caja!A:H',
+            });
+
+            const rows: unknown[][] = response.data.values ?? [];
+            return rows
+                .map((row) => this.mapCashMovement(row))
+                .filter((movement): movement is TransactionMovement =>
+                    Boolean(movement),
+                )
+                .filter(
+                    (movement) =>
+                        movement.account.toLowerCase() ===
+                            account.toLowerCase() &&
+                        movement.holder.toLowerCase() === holder.toLowerCase(),
+                )
+                .slice(0, limit);
+        } catch (error) {
+            this.logger.error(
+                `Failed to read cash movements from spreadsheet ${group.spreadsheet.id}`,
                 error instanceof Error ? error.stack : String(error),
             );
             throw error;
@@ -180,5 +215,41 @@ export class SheetsService {
             n = Math.floor((n - mod) / 26);
         }
         return col;
+    }
+
+    private mapCashMovement(row: unknown[]): TransactionMovement | null {
+        const [date, , description, account, holder, debit, credit] = row;
+        if (!date || !description || !account || !holder) {
+            return null;
+        }
+
+        return {
+            date: String(date),
+            description: String(description),
+            account: String(account),
+            holder: String(holder),
+            debit: this.toMovementNumber(debit),
+            credit: this.toMovementNumber(credit),
+        };
+    }
+
+    private toMovementNumber(value: unknown): number {
+        if (typeof value === 'number') {
+            return value;
+        }
+
+        if (!value) {
+            return 0;
+        }
+
+        const raw = String(value);
+        const hasComma = raw.includes(',');
+        const hasDot = raw.includes('.');
+        const normalized =
+            hasComma && hasDot
+                ? raw.replace(/\./g, '').replace(',', '.')
+                : raw.replace(',', '.');
+        const parsed = Number(normalized);
+        return Number.isNaN(parsed) ? 0 : parsed;
     }
 }

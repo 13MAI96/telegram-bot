@@ -7,7 +7,6 @@ import {
     Ctx,
     Command,
     InjectBot,
-    On,
 } from 'nestjs-telegraf';
 import { GroupService } from 'src/group/group.service';
 import { Context, Scenes, Telegraf } from 'telegraf';
@@ -74,7 +73,9 @@ export class BotUpdate implements OnModuleInit, OnModuleDestroy {
         try {
             const deleteWebhookStartedAt = Date.now();
             this.logger.log('Deleting Telegram webhook before bot launch');
-            await this.bot.telegram.deleteWebhook({ drop_pending_updates: true });
+            await this.bot.telegram.deleteWebhook({
+                drop_pending_updates: true,
+            });
             this.logger.log(
                 `Telegram webhook deleted in ${Date.now() - deleteWebhookStartedAt}ms`,
             );
@@ -135,6 +136,9 @@ export class BotUpdate implements OnModuleInit, OnModuleDestroy {
 Estos son los comandos disponibles:
 /gasto - Iniciar
 /ingreso - Registrar ingreso
+/gasto_plano - Registrar gasto con texto plano
+/ingreso_plano - Registrar ingreso con texto plano
+/transactions - Consultar últimos movimientos por cuenta y titular
 /suscripcion - Cobro fijo recurrente
 /help - Ayuda
 `);
@@ -189,6 +193,34 @@ Estos son los comandos disponibles:
             );
             if (group) {
                 await ctx.scene.enter('income', { group: group });
+            } else {
+                await ctx.scene.enter('new-group');
+            }
+        }
+    }
+
+    @Hears(/^\/gasto_plano(?:\s|$)/)
+    async startPlainBill(@Ctx() ctx: Scenes.SceneContext) {
+        if (ctx.message?.from.id) {
+            const group = await this.groupService.hasAssignedGroup(
+                `${ctx.message?.from.id}`,
+            );
+            if (group) {
+                await ctx.scene.enter('plane-text', { group: group });
+            } else {
+                await ctx.scene.enter('new-group');
+            }
+        }
+    }
+
+    @Hears(/^\/ingreso_plano(?:\s|$)/)
+    async startPlainIncome(@Ctx() ctx: Scenes.SceneContext) {
+        if (ctx.message?.from.id) {
+            const group = await this.groupService.hasAssignedGroup(
+                `${ctx.message?.from.id}`,
+            );
+            if (group) {
+                await ctx.scene.enter('plain-income', { group: group });
             } else {
                 await ctx.scene.enter('new-group');
             }
@@ -258,29 +290,21 @@ Estos son los comandos disponibles:
         }
     }
 
-    @On('text')
-    async planeTextManager(@Ctx() ctx: Scenes.SceneContext) {
-        if (ctx.scene?.current) {
-            return;
-        }
-
+    @Command('transactions')
+    async transactions(@Ctx() ctx: Scenes.SceneContext) {
         if (ctx.message?.from.id) {
-            const text = ctx.message['text']?.trim();
-            if (!text || text.startsWith('/')) {
-                return;
-            }
-
             const group = await this.groupService.hasAssignedGroup(
-                `${ctx.message.from.id}`,
+                `${ctx.message?.from.id}`,
             );
             if (group) {
-                await ctx.scene.enter('plane-text', {
-                    group: group,
-                    text,
-                });
+                await ctx.scene.enter('transactions', { group: group });
             } else {
                 await ctx.scene.enter('new-group');
             }
         }
+    }
+
+    async planeTextManager(@Ctx() ctx: Scenes.SceneContext) {
+        return;
     }
 }
