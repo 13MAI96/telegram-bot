@@ -290,7 +290,7 @@ Estos son los comandos disponibles:
         }
     }
 
-    @Command('transaciones')
+    @Command('transacciones')
     async transactions(@Ctx() ctx: Scenes.SceneContext) {
         if (ctx.message?.from.id) {
             const group = await this.groupService.hasAssignedGroup(
