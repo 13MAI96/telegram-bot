@@ -139,6 +139,7 @@ Estos son los comandos disponibles:
 /gasto_plano - Registrar gasto con texto plano
 /ingreso_plano - Registrar ingreso con texto plano
 /transactions - Consultar últimos movimientos por cuenta y titular
+/dashboard - Ver gráfico de gastos por categoría
 /suscripcion - Cobro fijo recurrente
 /help - Ayuda
 `);
@@ -284,6 +285,20 @@ Estos son los comandos disponibles:
             );
             if (group) {
                 await ctx.scene.enter('balance', { group: group });
+            } else {
+                await ctx.scene.enter('new-group');
+            }
+        }
+    }
+
+    @Command('dashboard')
+    async dashboard(@Ctx() ctx: Scenes.SceneContext) {
+        if (ctx.message?.from.id) {
+            const group = await this.groupService.hasAssignedGroup(
+                `${ctx.message?.from.id}`,
+            );
+            if (group) {
+                await ctx.scene.enter('dashboard', { group: group });
             } else {
                 await ctx.scene.enter('new-group');
             }

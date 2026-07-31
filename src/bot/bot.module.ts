@@ -14,10 +14,12 @@ import { TokenService } from 'src/token/token.service';
 import { OneTimeToken, OneTimeTokenSchema } from 'src/schemas/token.schema';
 import Wizards from './wizards';
 import { SharedModule } from 'src/shared/shared.module';
+import { DashboardDataService } from 'src/shared/services/dashboard/dashboard-data.service';
 import { DateService } from 'src/shared/services/date/date.service';
 import { CsvService } from 'src/shared/services/csv/csv.service';
 import { ExcelService } from 'src/shared/services/excel/excel.service';
 import { NumberService } from 'src/shared/services/number/number.service';
+import { PieChartImageService } from 'src/shared/services/dashboard/pie-chart-image.service';
 import { PlainTextTransactionService } from 'src/shared/services/plain-text-transaction/plain-text-transaction.service';
 import { KoyebWakeActivityModule } from './services/koyeb-wake-activity/koyeb-wake-activity.module';
 import { KoyebWakeActivityService } from './services/koyeb-wake-activity/koyeb-wake-activity.service';
@@ -66,8 +68,10 @@ import { KoyebWakeCoordinatorService } from './services/koyeb-wake-coordinator/k
         GroupService,
         SheetsService,
         TokenService,
+        DashboardDataService,
         DateService,
         NumberService,
+        PieChartImageService,
         PlainTextTransactionService,
         CsvService,
         ExcelService,

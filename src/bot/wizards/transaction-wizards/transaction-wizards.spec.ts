@@ -5,8 +5,11 @@ import { InstallmentWizard } from '../instalment/instalment.wizard';
 import { PlaneTextWizard } from '../plane-text/plane-text.wizard';
 import { PlainIncomeWizard } from '../plain-income/plain-income.wizard';
 import { TransactionsWizard } from '../transactions/transactions.wizard';
+import { DashboardWizard } from '../dashboard/dashboard.wizard';
 import { DateService } from 'src/shared/services/date/date.service';
 import { NumberService } from 'src/shared/services/number/number.service';
+import { DashboardDataService } from 'src/shared/services/dashboard/dashboard-data.service';
+import { PieChartImageService } from 'src/shared/services/dashboard/pie-chart-image.service';
 import { PlainTextTransactionService } from 'src/shared/services/plain-text-transaction/plain-text-transaction.service';
 import { WizardMessageService } from 'src/shared/services/wizard-message/wizard-message.service';
 
@@ -17,6 +20,7 @@ function createWizardContext(overrides: Record<string, unknown> = {}) {
             from: { first_name: 'Tester' },
         },
         reply: jest.fn().mockResolvedValue(undefined),
+        replyWithPhoto: jest.fn().mockResolvedValue(undefined),
         wizard: {
             state: {},
             next: jest.fn(),
@@ -35,6 +39,8 @@ function createWizardContext(overrides: Record<string, unknown> = {}) {
 describe('Transaction wizards', () => {
     const dateService = new DateService();
     const numberService = new NumberService();
+    const dashboardDataService = new DashboardDataService();
+    const pieChartImageService = new PieChartImageService();
     const plainTextTransactionService = new PlainTextTransactionService(
         dateService,
         numberService,
@@ -638,6 +644,201 @@ describe('Transaction wizards', () => {
 
         expect(ctx.reply).toHaveBeenCalledWith(
             expect.stringContaining('No pude consultar los movimientos.'),
+        );
+        expect(ctx.scene.leave).toHaveBeenCalled();
+    });
+
+    it('dashboard accepts month and prompts holder filter', async () => {
+        const wizard = new DashboardWizard(
+            { getCashMovements: jest.fn() } as any,
+            dashboardDataService,
+            pieChartImageService,
+            wizardMessageService,
+        );
+        const ctx = createWizardContext({
+            message: { text: '05/2026', from: { first_name: 'Tester' } },
+            wizard: {
+                state: {
+                    group: { holders: ['Tester'] },
+                },
+                next: jest.fn(),
+            },
+        });
+
+        await wizard.step2(ctx);
+
+        expect(ctx.wizard.state.month).toMatchObject({
+            month: 5,
+            year: 2026,
+            label: '05/2026',
+        });
+        expect(ctx.wizard.next).toHaveBeenCalled();
+        expect(ctx.reply).toHaveBeenCalledWith(
+            expect.stringContaining('titulares'),
+        );
+    });
+
+    it('dashboard keeps user on holder step after invalid filter', async () => {
+        const wizard = new DashboardWizard(
+            { getCashMovements: jest.fn() } as any,
+            dashboardDataService,
+            pieChartImageService,
+            wizardMessageService,
+        );
+        const ctx = createWizardContext({
+            message: { text: 'Nadie', from: { first_name: 'Tester' } },
+            wizard: {
+                state: {
+                    group: { holders: ['Tester'] },
+                },
+                next: jest.fn(),
+            },
+        });
+
+        await wizard.step3(ctx);
+
+        expect(ctx.wizard.next).not.toHaveBeenCalled();
+        expect(ctx.reply).toHaveBeenCalledWith(
+            expect.stringContaining('Titular inválido'),
+        );
+    });
+
+    it('dashboard sends chart image for matching expenses', async () => {
+        const sheetsService = {
+            getCashMovements: jest.fn().mockResolvedValue([
+                {
+                    date: '12/05/2026',
+                    category: 'Comida',
+                    description: 'Cafe',
+                    account: 'EFECTIVO',
+                    holder: 'Tester',
+                    debit: 100,
+                    credit: 0,
+                },
+            ]),
+        };
+        const renderer = {
+            renderExpensePieChart: jest
+                .fn()
+                .mockReturnValue(Buffer.from('png')),
+        };
+        const wizard = new DashboardWizard(
+            sheetsService as any,
+            dashboardDataService,
+            renderer as any,
+            wizardMessageService,
+        );
+        const ctx = createWizardContext({
+            message: { text: 'todos', from: { first_name: 'Tester' } },
+            wizard: {
+                state: {
+                    group: {
+                        accounts: ['EFECTIVO'],
+                    },
+                    month: { month: 5, year: 2026, label: '05/2026' },
+                    holders: ['Tester'],
+                    accounts: ['EFECTIVO'],
+                    allHolders: true,
+                    allAccounts: true,
+                },
+                next: jest.fn(),
+            },
+        });
+
+        await wizard.step4(ctx);
+
+        expect(ctx.replyWithPhoto).toHaveBeenCalledWith(
+            { source: Buffer.from('png') },
+            { caption: expect.stringContaining('Total: 100,00') },
+        );
+        expect(ctx.scene.leave).toHaveBeenCalled();
+    });
+
+    it('dashboard reports no data without sending an empty chart', async () => {
+        const sheetsService = {
+            getCashMovements: jest.fn().mockResolvedValue([]),
+        };
+        const renderer = {
+            renderExpensePieChart: jest.fn(),
+        };
+        const wizard = new DashboardWizard(
+            sheetsService as any,
+            dashboardDataService,
+            renderer as any,
+            wizardMessageService,
+        );
+        const ctx = createWizardContext({
+            message: { text: 'todos', from: { first_name: 'Tester' } },
+            wizard: {
+                state: {
+                    group: {
+                        accounts: ['EFECTIVO'],
+                    },
+                    month: { month: 5, year: 2026, label: '05/2026' },
+                    holders: ['Tester'],
+                    accounts: ['EFECTIVO'],
+                    allHolders: true,
+                    allAccounts: true,
+                },
+                next: jest.fn(),
+            },
+        });
+
+        await wizard.step4(ctx);
+
+        expect(ctx.reply).toHaveBeenCalledWith(
+            'No encontré gastos para el mes y filtros seleccionados.',
+        );
+        expect(ctx.replyWithPhoto).not.toHaveBeenCalled();
+        expect(ctx.scene.leave).toHaveBeenCalled();
+    });
+
+    it('dashboard sends text fallback when chart delivery fails', async () => {
+        const sheetsService = {
+            getCashMovements: jest.fn().mockResolvedValue([
+                {
+                    date: '12/05/2026',
+                    category: 'Comida',
+                    description: 'Cafe',
+                    account: 'EFECTIVO',
+                    holder: 'Tester',
+                    debit: 100,
+                    credit: 0,
+                },
+            ]),
+        };
+        const renderer = {
+            renderExpensePieChart: jest.fn(() => {
+                throw new Error('render failed');
+            }),
+        };
+        const wizard = new DashboardWizard(
+            sheetsService as any,
+            dashboardDataService,
+            renderer as any,
+            wizardMessageService,
+        );
+        const ctx = createWizardContext({
+            message: { text: 'todos', from: { first_name: 'Tester' } },
+            wizard: {
+                state: {
+                    group: {
+                        accounts: ['EFECTIVO'],
+                    },
+                    month: { month: 5, year: 2026, label: '05/2026' },
+                    holders: ['Tester'],
+                    accounts: ['EFECTIVO'],
+                    allHolders: true,
+                    allAccounts: true,
+                },
+                next: jest.fn(),
+            },
+        });
+
+        await wizard.step4(ctx);
+
+        expect(ctx.reply).toHaveBeenCalledWith(
+            expect.stringContaining('Comida: 100,00'),
         );
         expect(ctx.scene.leave).toHaveBeenCalled();
     });

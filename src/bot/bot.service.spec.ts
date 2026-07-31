@@ -166,6 +166,44 @@ describe('BotUpdate fixed command', () => {
         });
     });
 
+    it('enters dashboard when a group is assigned', async () => {
+        const groupService = {
+            hasAssignedGroup: jest.fn().mockResolvedValue({ _id: 'group-1' }),
+        };
+        const bot = createBot();
+        const update = new BotUpdate(groupService as any, bot);
+        const ctx = {
+            message: { from: { id: 123 }, text: '/dashboard' },
+            scene: {
+                enter: jest.fn(),
+            },
+        } as any;
+
+        await update.dashboard(ctx);
+
+        expect(ctx.scene.enter).toHaveBeenCalledWith('dashboard', {
+            group: { _id: 'group-1' },
+        });
+    });
+
+    it('redirects dashboard to onboarding when no group is assigned', async () => {
+        const groupService = {
+            hasAssignedGroup: jest.fn().mockResolvedValue(null),
+        };
+        const bot = createBot();
+        const update = new BotUpdate(groupService as any, bot);
+        const ctx = {
+            message: { from: { id: 123 }, text: '/dashboard' },
+            scene: {
+                enter: jest.fn(),
+            },
+        } as any;
+
+        await update.dashboard(ctx);
+
+        expect(ctx.scene.enter).toHaveBeenCalledWith('new-group');
+    });
+
     it('redirects plain-income to onboarding when no group is assigned', async () => {
         const groupService = {
             hasAssignedGroup: jest.fn().mockResolvedValue(null),

@@ -3,6 +3,7 @@ import { BalanceWizard } from './balance/balance.wizard';
 import { BillWizard } from './bill/bill.wizard';
 import { CategoriesWizard } from './categories/categories.wizard';
 import { ConfigWizard } from './config/config.wizard';
+import { DashboardWizard } from './dashboard/dashboard.wizard';
 import { FixedWizard } from './fixed/fixed.wizard';
 import { GroupWizard } from './group/group.wizard';
 import { IncomeWizard } from './income/income.wizard';
@@ -21,6 +22,7 @@ const Wizards = [
     BillWizard,
     CategoriesWizard,
     ConfigWizard,
+    DashboardWizard,
     FixedWizard,
     GroupWizard,
     IncomeWizard,

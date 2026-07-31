@@ -128,6 +128,28 @@ export class SheetsService {
         }
     }
 
+    async getCashMovements(group: Group): Promise<TransactionMovement[]> {
+        try {
+            const response = await this.sheets.spreadsheets.values.get({
+                spreadsheetId: group.spreadsheet.id,
+                range: 'Caja!A:H',
+            });
+
+            const rows: unknown[][] = response.data.values ?? [];
+            return rows
+                .map((row) => this.mapCashMovement(row))
+                .filter((movement): movement is TransactionMovement =>
+                    Boolean(movement),
+                );
+        } catch (error) {
+            this.logger.error(
+                `Failed to read cash movements from spreadsheet ${group.spreadsheet.id}`,
+                error instanceof Error ? error.stack : String(error),
+            );
+            throw error;
+        }
+    }
+
     async getSheetIdByName(
         spreadsheetId: string,
         sheetName: string,
@@ -218,13 +240,15 @@ export class SheetsService {
     }
 
     private mapCashMovement(row: unknown[]): TransactionMovement | null {
-        const [date, , description, account, holder, debit, credit] = row;
+        const [date, category, description, account, holder, debit, credit] =
+            row;
         if (!date || !description || !account || !holder) {
             return null;
         }
 
         return {
             date: String(date),
+            category: category ? String(category) : 'Sin categoría',
             description: String(description),
             account: String(account),
             holder: String(holder),
