@@ -242,14 +242,32 @@ export class SheetsService {
             return 0;
         }
 
-        const raw = String(value);
+        const raw = String(value).replace(/[^\d,.-]/g, '');
         const hasComma = raw.includes(',');
         const hasDot = raw.includes('.');
-        const normalized =
-            hasComma && hasDot
-                ? raw.replace(/\./g, '').replace(',', '.')
-                : raw.replace(',', '.');
+        const normalized = this.normalizeMovementNumber(raw, hasComma, hasDot);
         const parsed = Number(normalized);
         return Number.isNaN(parsed) ? 0 : parsed;
+    }
+
+    private normalizeMovementNumber(
+        raw: string,
+        hasComma: boolean,
+        hasDot: boolean,
+    ): string {
+        if (hasComma && hasDot) {
+            const lastComma = raw.lastIndexOf(',');
+            const lastDot = raw.lastIndexOf('.');
+
+            return lastComma > lastDot
+                ? raw.replace(/\./g, '').replace(',', '.')
+                : raw.replace(/,/g, '');
+        }
+
+        if (hasComma) {
+            return raw.replace(',', '.');
+        }
+
+        return raw;
     }
 }

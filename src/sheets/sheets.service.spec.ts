@@ -120,4 +120,51 @@ describe('SheetsService transaction movements', () => {
             ),
         ).rejects.toThrow('read failed');
     });
+
+    it('parses formatted debit and credit values from Caja', async () => {
+        const service = new SheetsService();
+        (service as any).sheets = {
+            spreadsheets: {
+                values: {
+                    get: jest.fn().mockResolvedValue({
+                        data: {
+                            values: [
+                                [
+                                    '12/05/2026',
+                                    'Comida',
+                                    'Cafe',
+                                    'EFECTIVO',
+                                    'Tester',
+                                    '$ 1.234,56',
+                                    '$ 0,00',
+                                    'Tester',
+                                ],
+                                [
+                                    '11/05/2026',
+                                    'Sueldo',
+                                    'Cobro',
+                                    'EFECTIVO',
+                                    'Tester',
+                                    '$ 0,00',
+                                    '$ 2,500.75',
+                                    'Tester',
+                                ],
+                            ],
+                        },
+                    }),
+                },
+            },
+        };
+
+        const movements = await service.getLatestCashMovements(
+            { spreadsheet: { id: 'sheet-id' } } as any,
+            'EFECTIVO',
+            'Tester',
+        );
+
+        expect(movements).toEqual([
+            expect.objectContaining({ debit: 1234.56, credit: 0 }),
+            expect.objectContaining({ debit: 0, credit: 2500.75 }),
+        ]);
+    });
 });
