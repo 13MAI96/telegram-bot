@@ -28,7 +28,7 @@ jobs:
     runs-on: docker
 
     steps:
-      - name: Configure SSH
+      - name: Configure SSH keys
         run: |
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
