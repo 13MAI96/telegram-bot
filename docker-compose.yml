@@ -4,6 +4,8 @@ services:
       context: .
       target: production
     container_name: telegram-bot-app
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
     env_file:
       - .env
     environment:
