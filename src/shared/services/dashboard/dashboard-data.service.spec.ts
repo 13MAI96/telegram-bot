@@ -10,11 +10,11 @@ describe('DashboardDataService', () => {
             year: 2026,
             label: '05/2026',
         });
-        expect(service.parseMonth('este_mes', baseDate)).toMatchObject({
+        expect(service.parseMonth('actual', baseDate)).toMatchObject({
             month: 5,
             year: 2026,
         });
-        expect(service.parseMonth('mes_pasado', baseDate)).toMatchObject({
+        expect(service.parseMonth('pasado', baseDate)).toMatchObject({
             month: 4,
             year: 2026,
         });

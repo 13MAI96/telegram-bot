@@ -26,7 +26,7 @@ export class DashboardWizard {
     @WizardStep(1)
     async step1(@Ctx() ctx: Scenes.WizardContext) {
         await ctx.reply(
-            '¿Qué mes querés ver? Podés usar mm/yyyy, este_mes, mes_pasado o el nombre del mes.',
+            '¿Qué mes querés ver? Podés usar mm/yyyy, actual, pasado o el nombre del mes.',
         );
         ctx.wizard.next();
     }
@@ -40,7 +40,7 @@ export class DashboardWizard {
             await ctx.reply(
                 this.wizardMessageService.buildRetryMessage(
                     'Mes inválido.',
-                    'Ingresá el mes como mm/yyyy, este_mes, mes_pasado o nombre del mes.',
+                    'Ingresá el mes como mm/yyyy, actual, pasado o nombre del mes.',
                 ),
             );
             return;

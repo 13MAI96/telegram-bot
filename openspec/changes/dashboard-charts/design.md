@@ -92,5 +92,5 @@ Rollback strategy: deshabilitar el comando del dashboard y conservar los servici
 ## Open Questions
 
 - Nombre final del comando: se propone `/dashboard` salvo que se prefiera un nombre más específico como `/gastos_categorias`.
-- Formato de mes: se propone aceptar `mm/yyyy`, nombres de mes del año actual y shortcuts `este_mes`/`mes_pasado`.
+- Formato de mes: se propone aceptar `mm/yyyy`, nombres de mes del año actual y shortcuts `actual`/`pasado`.
 - Si una categoría tiene monto `0` luego de filtros, se propone excluirla del gráfico.

@@ -34,14 +34,14 @@ export class DashboardDataService {
         }
 
         const normalized = this.normalizeText(input);
-        if (normalized === 'este_mes') {
+        if (normalized === 'actual') {
             return this.buildMonth(
                 baseDate.getMonth() + 1,
                 baseDate.getFullYear(),
             );
         }
 
-        if (normalized === 'mes_pasado') {
+        if (normalized === 'pasado') {
             const previousMonth = new Date(
                 baseDate.getFullYear(),
                 baseDate.getMonth() - 1,
