@@ -69,7 +69,12 @@ jobs:
 
     steps:
       - name: Configure SSH keys
+        shell: bash
         run: |
+          set -euxo pipefail
+          command -v ssh
+          command -v ssh-keyscan
+          echo "${{DEPLOY_USER}}"
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
 
