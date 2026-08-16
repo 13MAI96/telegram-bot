@@ -32,6 +32,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
+      - name: Install docker
+        run: |
+          apt-get update
+          apt-get install -y docker.io
+          docker --version
+
       - name: Registry login
         env:
           REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
