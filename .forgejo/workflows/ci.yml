@@ -55,7 +55,7 @@ jobs:
       - name: Push commit image
         run: |
           docker push \
-            "${{ secrets.REGISTRY_HOST }}/teñegram-bot:${{ forgejo.sha }}"
+            "${{ secrets.REGISTRY_HOST }}/telegram-bot:${{ forgejo.sha }}"
 
       - name: Push latest
         run: |
