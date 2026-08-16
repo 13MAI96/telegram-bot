@@ -69,19 +69,27 @@ jobs:
 
     steps:
       - name: Configure SSH keys
+        env: 
+          DEPLOY_HOST: ${{secrets.DEPLOY_HOST}}
+          DEPLOY_USER: ${{secrets.DEPLOY_USER}}
+          DEPLOY_SSH_KEY: ${{secrets.DEPLOY_SSH_KEY}}
         run: |
-          echo "${{DEPLOY_USER}}"
+          set -e
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
 
-          echo "${{ secrets.DEPLOY_SSH_KEY }}" > ~/.ssh/deploy_key
+          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
           chmod 600 ~/.ssh/deploy_key
 
-          ssh-keyscan -H "${{ secrets.DEPLOY_HOST }}" >> ~/.ssh/known_hosts
+          ssh-keyscan -T 10 -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
 
       - name: Deploy
+        env:
+          DEPLOY_HOST: ${{secrets.DEPLOY_HOST}}
+          DEPLOY_USER: ${{secrets.DEPLOY_USER}}
         run: |
           ssh \
             -i ~/.ssh/deploy_key \
-            "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
-            sudo /usr/local/sbin/deploy-compose-app "{{ vars.DEPLOY_APP }}"
+            "$DEPLOY_USER@$DEPLOY_HOST" \
+            sudo /usr/local/sbin/deploy-compose-app "${{ forgejo.event.repository.name }}"
