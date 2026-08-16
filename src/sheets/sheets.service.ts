@@ -12,10 +12,11 @@ import { TransactionMovement } from './transaction-movement.model';
 export class SheetsService {
     private readonly logger = new Logger(SheetsService.name);
     private sheets;
+    private credentials = JSON.parse(process.env.GOOGLE_API_JSON!);
 
     constructor() {
         const auth = new google.auth.GoogleAuth({
-            keyFile: 'src/config/lunar-ensign-383015-7bffe1cbfd80.json',
+            credentials: this.credentials,
             scopes: ['https://www.googleapis.com/auth/spreadsheets'],
         });
 
