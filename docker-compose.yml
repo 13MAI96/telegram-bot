@@ -1,8 +1,6 @@
 services:
-  app:
-    build:
-      context: .
-      target: production
+  telegram-bot:
+    image: registry.marceloiglesias.net.ar/telegram-bot:latest
     container_name: telegram-bot-app
     volumes:
       - /etc/localtime:/etc/localtime:ro

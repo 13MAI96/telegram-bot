@@ -1,9 +1,13 @@
-name: Telegram Bot CI
+name: Telegram Bot CI/CD
 
 on: 
   push:
     branches:
       - poc/maestros-csv
+
+concurrency:
+  group: deploy-${{ forgejo.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -13,18 +17,48 @@ jobs:
         - name: Checkout
           uses: actions/checkout@v6
 
-        - name: Node version
-          run: npm --version
-
         - name: Install dependencies
           run: npm ci
 
         - name: Build
           run: npm run build
 
+  image:
+    if: ${{ forgejo.event_name == 'push' }}
+    needs: build
+    runs-on: docker
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Registry login
+        env:
+          REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
+        run: |
+          printf '%s' "$REGISTRY_PASSWORD" | 
+            docker login "${{ secrets.REGISTRY_HOST }}" \
+              --username "${{ secrets.REGISTRY_USERNAME}}" \
+              --password-stdin
+      - name: Build image
+        run: |
+          docker build \
+            -t "${{ secrets.REGISTRY_HOST}}/telegram-bot:${{ forgejo.sha }}" \
+            -t "${{ secrets.REGISTRY_HOST}}/telegram-bot:latest" .
+
+      - name: Push commit image
+        run: |
+          docker push \
+            "${{ secrets.REGISTRY_HOST }}/teñegram-bot:${{ forgejo.sha }}"
+
+      - name: Push latest
+        run: |
+          docker push \
+            "${{ secrets.REGISTRY_HOST}}/telegram-bot:latest"
+
   deploy:
     if: ${{ forgejo.event_name == 'push'}}
-    needs: build
+    needs: image
     runs-on: docker
 
     steps:
@@ -43,4 +77,4 @@ jobs:
           ssh \
             -i ~/.ssh/deploy_key \
             "${{ secrets.DEPLOY_USER }}@${{ secrets.DEPLOY_HOST }}" \
-            sudo /usr/local/sbin/telegram-bot-deploy
+            sudo /usr/local/sbin/deploy-compose-app "{{ vars.DEPLOY_APP }}"
