@@ -42,7 +42,7 @@ export class KoyebWakeCoordinatorService
         this.currentCycleToken += 1;
         this.warningSentForCycleToken = null;
         this.clearWarningTimer();
-        this.scheduleWarning(at, this.currentCycleToken);
+        // this.scheduleWarning(at, this.currentCycleToken);
     }
 
     async flushPendingWarning() {
@@ -53,22 +53,22 @@ export class KoyebWakeCoordinatorService
         return this.sendWarningForCurrentCycle();
     }
 
-    private scheduleWarning(at: number, cycleToken: number) {
-        const remaining = Math.max(WARNING_DELAY_MS, 0);
-        this.warningTimer = setTimeout(() => {
-            void this.sendWarningForCycle(cycleToken);
-        }, remaining);
+    // private scheduleWarning(at: number, cycleToken: number) {
+    //     const remaining = Math.max(WARNING_DELAY_MS, 0);
+    //     this.warningTimer = setTimeout(() => {
+    //         void this.sendWarningForCycle(cycleToken);
+    //     }, remaining);
 
-        if (remaining === 0) {
-            void this.sendWarningForCycle(cycleToken);
-        }
+    //     if (remaining === 0) {
+    //         void this.sendWarningForCycle(cycleToken);
+    //     }
 
-        this.logger.debug(
-            `Scheduled Koyeb sleep warning for cycle=${cycleToken} at ${new Date(
-                at + WARNING_DELAY_MS,
-            ).toISOString()}`,
-        );
-    }
+    //     this.logger.debug(
+    //         `Scheduled Koyeb sleep warning for cycle=${cycleToken} at ${new Date(
+    //             at + WARNING_DELAY_MS,
+    //         ).toISOString()}`,
+    //     );
+    // }
 
     private async sendWarningForCurrentCycle() {
         return this.sendWarningForCycle(this.currentCycleToken);
