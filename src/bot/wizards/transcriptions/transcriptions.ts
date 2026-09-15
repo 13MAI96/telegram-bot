@@ -19,7 +19,7 @@ Hola, Podrias enviarme el archivo a procesar?
     }
 
     @WizardStep(2)
-    @On('document')
+    @On(['audio', 'document', 'voice'])
     async handleDoc(@Ctx() ctx: Scenes.WizardContext) {
         const doc = ctx.message ? ctx.message['document'] : null;
 
