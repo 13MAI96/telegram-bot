@@ -34,6 +34,7 @@ const Wizards = [
     TransactionsWizard,
     UsersWizard,
     EspeWizard,
+    TransactionsWizard,
 ];
 
 export default Wizards;

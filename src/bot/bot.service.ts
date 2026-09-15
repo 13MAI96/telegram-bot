@@ -319,6 +319,15 @@ Estos son los comandos disponibles:
         }
     }
 
+    @Command('transcribir')
+    async transcriptions(@Ctx() ctx: Scenes.SceneContext) {
+        if (ctx.message?.from.id) {
+            await ctx.scene.enter('transcription');
+        } else {
+            return;
+        }
+    }
+
     async planeTextManager(@Ctx() ctx: Scenes.SceneContext) {
         return;
     }
