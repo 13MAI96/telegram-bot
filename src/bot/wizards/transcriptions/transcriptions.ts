@@ -1,13 +1,9 @@
 import { Wizard, WizardStep, Ctx, Hears, Command, On } from 'nestjs-telegraf';
 import { Scenes } from 'telegraf';
-import { CsvService } from 'src/shared/services/csv/csv.service';
-import * as ExcelJs from 'exceljs';
-import * as fs from 'fs';
-import { ExcelService } from 'src/shared/services/excel/excel.service';
 import { throwError } from 'rxjs';
 import { WhisperService } from 'src/whisper/whisper.service';
 
-@Wizard('espe')
+@Wizard('transcription')
 export class EspeWizard {
     private readonly whisper = new WhisperService();
     constructor() {}
