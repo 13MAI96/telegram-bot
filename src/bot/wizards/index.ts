@@ -15,6 +15,7 @@ import { TransferWizard } from './transfer/transfer.wizard';
 import { TransactionsWizard } from './transactions/transactions.wizard';
 import { UsersWizard } from './users/users.wizard';
 import { EspeWizard } from './zespe/zespe.wizard';
+import { TranscriptionWizard } from './transcriptions/transcriptions';
 
 const Wizards = [
     AccountsWizard,
@@ -34,7 +35,7 @@ const Wizards = [
     TransactionsWizard,
     UsersWizard,
     EspeWizard,
-    TransactionsWizard,
+    TranscriptionWizard,
 ];
 
 export default Wizards;

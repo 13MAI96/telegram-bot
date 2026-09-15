@@ -4,7 +4,7 @@ import { throwError } from 'rxjs';
 import { WhisperService } from 'src/whisper/whisper.service';
 
 @Wizard('transcription')
-export class EspeWizard {
+export class TranscriptionWizard {
     private readonly whisper = new WhisperService();
     constructor() {}
 
