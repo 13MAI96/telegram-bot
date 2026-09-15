@@ -7,19 +7,24 @@ export class WhisperService {
     constructor() {}
 
     public async requestTranscription(file) {
-        const text = await fetch(
+        const formData = new FormData();
+
+        formData.append('file', file); // File, Blob, etc.
+        formData.append('model', 'Systran/faster-whisper-large-v3');
+        formData.append('language', 'es');
+        formData.append('response_format', 'json');
+
+        const response = await fetch(
             'http://whisper.marceloiglesias.net.ar/v1/audio/transcriptions',
             {
-                body: {
-                    model: 'Systran/faster-whisper-large-v3',
-                    file: file,
-                    language: 'es',
-                    response_format: 'json',
-                },
+                method: 'POST',
+                body: formData,
             },
         );
-        const result = await text.json();
-        this.logger.log(result);
-        return JSON.stringify(result);
+
+        const data = await response.json();
+
+        this.logger.log(data.text);
+        return JSON.stringify(data.text);
     }
 }
