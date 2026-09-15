@@ -21,14 +21,21 @@ Hola, Podrias enviarme el archivo a procesar?
     @WizardStep(2)
     @On(['audio', 'document', 'voice'])
     async handleDoc(@Ctx() ctx: Scenes.WizardContext) {
+        const audio = ctx.message ? ctx.message['audio'] : null;
         const doc = ctx.message ? ctx.message['document'] : null;
-
-        if (doc.mime_type === 'audio/*') {
+        let fileUrl = '';
+        if (audio) {
+            await ctx.reply(`Recibi el archivo, dejame ver que puedo hacer`);
+            const fileId = audio.file_id as string;
+            const file = await ctx.telegram.getFile(fileId);
+            fileUrl = `https://api.telegram.org/file/bot${process.env.BOT_TOKEN}/${file.file_path}`;
+        } else if (doc.mime_type === 'audio/*') {
             await ctx.reply(`Recibi el archivo, dejame ver que puedo hacer`);
             const fileId = doc.file_id as string;
             const file = await ctx.telegram.getFile(fileId);
-            const fileUrl = `https://api.telegram.org/file/bot${process.env.BOT_TOKEN}/${file.file_path}`;
-
+            fileUrl = `https://api.telegram.org/file/bot${process.env.BOT_TOKEN}/${file.file_path}`;
+        }
+        if (fileUrl) {
             try {
                 const uint8 = await this.tryToGet(fileUrl);
                 if (!uint8) {
