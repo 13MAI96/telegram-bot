@@ -24,6 +24,7 @@ import { PlainTextTransactionService } from 'src/shared/services/plain-text-tran
 import { KoyebWakeActivityModule } from './services/koyeb-wake-activity/koyeb-wake-activity.module';
 import { KoyebWakeActivityService } from './services/koyeb-wake-activity/koyeb-wake-activity.service';
 import { KoyebWakeCoordinatorService } from './services/koyeb-wake-coordinator/koyeb-wake-coordinator.service';
+import { WhisperService } from 'src/whisper/whisper.service';
 
 @Module({
     imports: [
@@ -75,6 +76,7 @@ import { KoyebWakeCoordinatorService } from './services/koyeb-wake-coordinator/k
         PlainTextTransactionService,
         CsvService,
         ExcelService,
+        WhisperService,
     ],
     exports: [KoyebWakeCoordinatorService],
 })

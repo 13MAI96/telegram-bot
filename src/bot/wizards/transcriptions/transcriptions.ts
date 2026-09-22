@@ -5,8 +5,7 @@ import { WhisperService } from 'src/whisper/whisper.service';
 
 @Wizard('transcription')
 export class TranscriptionWizard {
-    private readonly whisper = new WhisperService();
-    constructor() {}
+    constructor(private whisper: WhisperService) {}
 
     @WizardStep(1)
     async start(@Ctx() ctx: Scenes.WizardContext) {
@@ -41,13 +40,18 @@ Hola, Podrias enviarme el archivo a procesar?
                 if (!uint8) {
                     throwError(() => 'No se puede obtener');
                 }
-                let obj: string = ctx.wizard.state['obj'];
                 await ctx.reply(
-                    `Ya descargue el archivo, voy a intentar analizarlo.`,
+                    `Ya descargue el archivo dura ${(audio.duration / 60).toPrecision(2)}m, voy a intentar analizarlo.`,
                 );
-                obj = await this.whisper.requestTranscription(uint8);
-                ctx.wizard.state['obj'] = obj;
-                await ctx.reply(obj);
+                const res = await this.whisper.requestTranscription(
+                    uint8,
+                    ctx.chat?.id,
+                );
+
+                if (res)
+                    await ctx.reply(
+                        'Ya lo tiene whisper, te aviso cuando tenga novedades.',
+                    );
 
                 await ctx.scene.leave();
                 return;
@@ -84,7 +88,7 @@ Hola, Podrias enviarme el archivo a procesar?
         }
         try {
             const res = await fetch(fileUrl).then((res) => res.arrayBuffer());
-            const uint8 = new Uint8Array(res);
+            const uint8 = Buffer.from(res);
             return uint8;
         } catch {
             if (fail.count < 3) {

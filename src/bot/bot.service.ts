@@ -7,8 +7,10 @@ import {
     Ctx,
     Command,
     InjectBot,
+    Sender,
 } from 'nestjs-telegraf';
 import { GroupService } from 'src/group/group.service';
+import { WhisperService } from 'src/whisper/whisper.service';
 import { Context, Scenes, Telegraf } from 'telegraf';
 
 @Update()
@@ -17,8 +19,18 @@ export class BotUpdate implements OnModuleInit, OnModuleDestroy {
 
     constructor(
         private groupService: GroupService,
+        private readonly whisper: WhisperService,
         @InjectBot() private readonly bot: Telegraf,
-    ) {}
+    ) {
+        this.whisper.alerts.subscribe(async (alert) => {
+            if (alert)
+                await this.bot.telegram.sendMessage(alert.chatId, alert.message);
+        });
+        this.whisper.resultDocument.subscribe(async (doc) => {
+            if (doc)
+                await this.bot.telegram.sendDocument(doc.chatId, doc.document);
+        });
+    }
 
     /**
      * Bot inicialization process

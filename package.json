@@ -24,13 +24,14 @@
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.1.6",
     "@nestjs/mongoose": "^11.0.3",
-    "exceljs": "^4.4.0",
     "@nestjs/platform-express": "^11.1.6",
+    "exceljs": "^4.4.0",
     "googleapis": "^165.0.0",
     "mongoose": "^8.19.3",
     "nestjs-telegraf": "^2.9.1",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "undici": "^8.10.2"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
