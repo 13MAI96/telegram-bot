@@ -22,14 +22,18 @@ Hola, Podrias enviarme el archivo a procesar?
     async handleDoc(@Ctx() ctx: Scenes.WizardContext) {
         const audio = ctx.message ? ctx.message['audio'] : null;
         const doc = ctx.message ? ctx.message['document'] : null;
+        const voice = ctx.message ? ctx.message['voice'] : null;
         let fileUrl = '';
-        if (audio) {
+        let fileMessage;
+        if (audio || voice) {
             await ctx.reply(`Recibi el archivo, dejame ver que puedo hacer`);
-            const fileId = audio.file_id as string;
+            fileMessage = audio ?? voice;
+            const fileId = fileMessage?.file_id as string;
             const file = await ctx.telegram.getFile(fileId);
             fileUrl = `https://api.telegram.org/file/bot${process.env.BOT_TOKEN}/${file.file_path}`;
         } else if (doc.mime_type === 'audio/*') {
             await ctx.reply(`Recibi el archivo, dejame ver que puedo hacer`);
+            fileMessage = doc;
             const fileId = doc.file_id as string;
             const file = await ctx.telegram.getFile(fileId);
             fileUrl = `https://api.telegram.org/file/bot${process.env.BOT_TOKEN}/${file.file_path}`;
@@ -41,7 +45,7 @@ Hola, Podrias enviarme el archivo a procesar?
                     throwError(() => 'No se puede obtener');
                 }
                 await ctx.reply(
-                    `Ya descargue el archivo dura ${(audio.duration / 60).toPrecision(2)}m, voy a intentar analizarlo.`,
+                    `Ya descargue el archivo dura ${((fileMessage?.duration ?? 0) / 60).toPrecision(2)}m, voy a intentar analizarlo.`,
                 );
                 const res = await this.whisper.requestTranscription(
                     uint8,
